@@ -10,9 +10,8 @@ It is a single HTML file with no build step and no dependencies (fonts load from
 
 ## Try it
 
-- **Here on GitHub Pages:** open the site for this repository.
-- **As a Claude artifact:** https://claude.ai/artifact/LmzCG1adnWXobGnNghY4BB
-  The ability to **Save PNG** and **Save Rosaic** don't work there - the artifact viewer blocks downloads for people outside the owner's organization. Everything else works. To save images, use the GitHub version or a downloaded copy.
+- [GitHub Pages](https://casimirkapazi.github.io/rosaic/)
+- Or save and run locally
 
 ## Features
 
@@ -23,6 +22,7 @@ It is a single HTML file with no build step and no dependencies (fonts load from
 - Frame animation, per-layer rotation and scale, keep-alive controls against wash-out.
 - Output resolution up to 2048 px, PNG export, and a **Save Rosaic** button that writes a standalone copy of the tool.
 - The full setup can be copied as a text string and applied again later or shared.
+- Exporting a PNG saves the current settings in the image. Load such an image to restore the settings that generated it. Initial conditions like seed image or iterated changes can not be restored.
 
 Hover the **?** next to each control for an explanation.
 

@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rosaic — recursive mosaic · v31</title>
+<title>Rosaic — recursive mosaic · v32</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
@@ -96,7 +96,7 @@
   <header id="appHeader">
     <span class="mark">Rosaic</span>
     <span class="sub">recursive mosaic · wallpaper feedback</span>
-    <span class="ver">v31</span>
+    <span class="ver">v32</span>
   </header>
 
   <main id="appMain">
@@ -210,7 +210,7 @@
       </div>
 
       <div class="group">
-        <div class="label"><span class="lt">Seed image <span class="help" tabindex="0" data-tip="Load your own image as the seed that gets folded. Without one, a generated seed is used.">?</span></span></div>
+        <div class="label"><span class="lt">Seed image <span class="help" tabindex="0" data-tip="Load your own image as the seed that gets folded. Without one, a generated seed is used. If the image is a PNG saved by Rosaic, its settings are also read into the <b>State</b> box &mdash; press <b>Apply loaded settings</b> to use them.">?</span></span></div>
         <label class="file" for="fileInp">Load image</label>
         <input type="file" id="fileInp" accept="image/*">
       </div>
@@ -227,7 +227,7 @@
       </div>
 
       <div class="group">
-        <div class="label"><span class="lt">State &amp; export <span class="help" tabindex="0" data-tip="<b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand. <b>Save PNG</b> downloads the current Mosaic panel at the output resolution above. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser &mdash; to keep or pass on (combine it with a copied state string to share a specific setup).">?</span></span></div>
+        <div class="label"><span class="lt">State &amp; export <span class="help" tabindex="0" data-tip="<b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand. <b>Save PNG</b> downloads the current Mosaic panel at the output resolution above, with the settings stored inside the file (<code>it</code> = iterations at save time, for reference only). The saved settings don&rsquo;t include the seed image or the evolved state, so applying them restarts from the seed. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser &mdash; to keep or pass on (combine it with a copied state string to share a specific setup).">?</span></span></div>
         <textarea id="stateBox" spellcheck="false" placeholder="Copy state to capture the current settings here&hellip;"></textarea>
         <div class="btns">
           <button id="copyState" class="wide">Copy state</button>
@@ -314,6 +314,43 @@ async function offerFile(filename, blob){
   return "saved";
 }
 function flash(btn,text,ms){ const t=btn.dataset.label||(btn.dataset.label=btn.textContent); btn.textContent=text; setTimeout(()=>{ btn.textContent=t; },ms||1200); }
+
+/* ---- settings inside PNG files (v32) ----------------------------------
+   Save PNG writes the state string into a standard PNG text chunk (tEXt,
+   keyword "Rosaic"), placed right after the IHDR header. Loading an image
+   reads that chunk back if present. Other software ignores the chunk; some
+   sites that re-encode uploaded images strip it.                          */
+const PNG_KEY="Rosaic";
+const CRC_TABLE=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; } return t; })();
+function crc32(bytes){ let c=0xFFFFFFFF; for(let i=0;i<bytes.length;i++) c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+const PNG_SIG=[137,80,78,71,13,10,26,10];
+function isPng(u8){ return u8.length>33 && PNG_SIG.every((b,i)=>u8[i]===b); }
+/* returns a new Uint8Array with a tEXt chunk inserted after IHDR */
+function pngWithText(u8,key,text){
+  const ascii=text.replace(/[^\x20-\x7e]/g,ch=>"\\u"+ch.charCodeAt(0).toString(16).padStart(4,"0"));   // tEXt is Latin-1; JSON stays valid
+  const payload=new TextEncoder().encode(key+"\0"+ascii);
+  const chunk=new Uint8Array(12+payload.length), dv=new DataView(chunk.buffer);
+  dv.setUint32(0,payload.length); chunk.set([116,69,88,116],4); chunk.set(payload,8);   // "tEXt"
+  dv.setUint32(8+payload.length, crc32(chunk.subarray(4,8+payload.length)));
+  const ihdrEnd=8+12+new DataView(u8.buffer,u8.byteOffset).getUint32(8);
+  const out=new Uint8Array(u8.length+chunk.length);
+  out.set(u8.subarray(0,ihdrEnd),0); out.set(chunk,ihdrEnd); out.set(u8.subarray(ihdrEnd),ihdrEnd+chunk.length);
+  return out;
+}
+/* returns the text of the first tEXt chunk with this keyword, or null */
+function pngReadText(u8,key){
+  if(!isPng(u8)) return null;
+  const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength); let p=8;
+  while(p+12<=u8.length){
+    const len=dv.getUint32(p), type=String.fromCharCode(u8[p+4],u8[p+5],u8[p+6],u8[p+7]);
+    if(p+12+len>u8.length) break;
+    if(type==="tEXt"){ const d=u8.subarray(p+8,p+8+len), z=d.indexOf(0);
+      if(z>0 && new TextDecoder("latin1").decode(d.subarray(0,z))===key) return new TextDecoder("latin1").decode(d.subarray(z+1)); }
+    if(type==="IEND") break;
+    p+=12+len;
+  }
+  return null;
+}
 
 /* ===== wallpaper groups, square / rectangular lattice =====
    Each op carries its own affine map m=(a,b,c,d,e,f): x'=a x+c y+e, y'=b x+d y+f,
@@ -1186,22 +1223,42 @@ stepBtn.addEventListener("click", ()=>{ setPlaying(false); commitFeedback(); ren
 resetBtn.addEventListener("click", ()=>{ setPlaying(false); reset(false); });
 winToggle.addEventListener("click", ()=>{ showWindow=!showWindow; winToggle.classList.toggle("on",showWindow); winToggle.textContent=showWindow?"Show window":"Window hidden"; });
 winReset.addEventListener("click", ()=>{ defaultFrame(); updateWinReadout(); });
-fileInp.addEventListener("change", e=>{ const f=e.target.files[0]; if(!f) return; const img=new Image(); img.onload=()=>{ seedImg=img; setPlaying(false); reset(false); }; img.src=URL.createObjectURL(f); });
+fileInp.addEventListener("change", async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image(); img.onload=()=>{ seedImg=img; setPlaying(false); reset(false); }; img.src=URL.createObjectURL(f);
+  /* a Rosaic PNG carries its settings: put them in the state box, leave applying to the viewer */
+  let text=null;
+  try{ text=pngReadText(new Uint8Array(await f.arrayBuffer()), PNG_KEY); }catch(err){ text=null; }
+  if(text){
+    stateBox.value=text;
+    applyStateBtn.classList.add("on"); applyStateBtn.textContent="Apply loaded settings";
+  }
+  e.target.value="";   // allow loading the same file again
+});
 
 copyState.addEventListener("click", ()=>{
   stateBox.value=JSON.stringify(serializeState());
+  applyStateBtn.classList.remove("on"); applyStateBtn.textContent="Apply";
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(stateBox.value).catch(()=>{});
   copyState.textContent="Copied"; setTimeout(()=>copyState.textContent="Copy state",900);
 });
 applyStateBtn.addEventListener("click", ()=>{
   let obj; try{ obj=JSON.parse(stateBox.value); }
   catch(e){ applyStateBtn.textContent="Bad text"; setTimeout(()=>applyStateBtn.textContent="Apply",1100); return; }
+  applyStateBtn.classList.remove("on"); applyStateBtn.textContent="Apply";
   applyState(obj);
 });
 const saveHtml=document.getElementById("saveHtml");
 async function reportSave(btn, res){ if(res!=="saved" && res!=="declined") flash(btn, res==="too_large"?"Too large":"Unavailable"); }
 savePng.addEventListener("click", ()=>{
-  view.toBlob(async b=>{ if(!b){ flash(savePng,"Failed"); return; } reportSave(savePng, await offerFile("rosaic.png", b)); }, "image/png");
+  const meta=JSON.stringify(Object.assign(serializeState(), { it:iter }));   // "it" = iterations at save time (for reference; Apply ignores it)
+  view.toBlob(async b=>{
+    if(!b){ flash(savePng,"Failed"); return; }
+    let out=b;
+    try{ const u8=new Uint8Array(await b.arrayBuffer()); if(isPng(u8)) out=new Blob([pngWithText(u8,PNG_KEY,meta)],{type:"image/png"}); }
+    catch(e){ out=b; }                                                     // fall back to a plain PNG
+    reportSave(savePng, await offerFile("rosaic.png", out));
+  }, "image/png");
 });
 if(!SELF) saveHtml.disabled=true;
 saveHtml.addEventListener("click", async ()=>{
