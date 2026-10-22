@@ -1,94 +1,137 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rosaic — recursive mosaic · v32</title>
+<title>Rosaic — recursive mosaic · v34</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
 <style id="rosaic-style">
   :root{
-    --bg:#0c0d0f; --panel:#15171b; --panel-2:#1b1e23;
-    --ink:#e8e6e1; --muted:#8a8780; --faint:#56524b;
-    --line:#2a2d33; --accent:#d8a657; --accent-dim:#7d6537;
+    color-scheme:dark;
+    --bg:#0c0d0f; --panel:#16181c; --panel-2:#1e2127; --panel-3:#262a31;
+    --ink:#ece8df; --title:#cfc9bd; --muted:#aaa59a; --faint:#8b867c;
+    --line:#343941; --line-strong:#4a505a;
+    --accent:#e3b468; --accent-dim:#8f7442; --accent-soft:rgba(227,180,104,.12);
+    --warn:#e09a78;
     --mono:'IBM Plex Mono', ui-monospace, monospace;
     --serif:'Newsreader', Georgia, serif;
+    --aside:330px;
+    --cv:clamp(220px, min(calc(100vh - 250px), calc((100vw - var(--aside) - 80px) / 2)), 640px);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;}
   body{background:var(--bg);color:var(--ink);font-family:var(--mono);display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;}
-  header{display:flex;align-items:baseline;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);flex:0 0 auto;}
-  header .mark{font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:13px;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  header{display:flex;align-items:baseline;gap:14px;padding:13px 22px;border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--panel);}
+  header .mark{font-weight:600;letter-spacing:.22em;text-transform:uppercase;font-size:14px;color:var(--ink);}
   header .sub{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:15px;}
-  header .ver{margin-left:auto;color:var(--accent);font-size:11px;letter-spacing:.18em;border:1px solid var(--accent-dim);padding:2px 8px;border-radius:2px;}
+  header .gh{margin-left:auto;font-size:12px;color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line-strong);padding-bottom:1px;}
+  header .gh:hover{color:var(--accent);border-color:var(--accent);}
+  header .ver{color:var(--accent);font-size:11px;letter-spacing:.16em;border:1px solid var(--accent-dim);padding:2px 8px;border-radius:2px;}
 
   main{flex:1 1 auto;display:flex;min-height:0;}
-  aside{flex:0 0 320px;border-right:1px solid var(--line);padding:18px 22px 14px;display:flex;flex-direction:column;gap:18px;background:linear-gradient(180deg,var(--panel),#101216);overflow-y:auto;}
-  .group{display:flex;flex-direction:column;gap:9px;}
-  .divider{display:flex;align-items:center;gap:10px;margin:5px 0 1px;color:var(--accent-dim);font-size:9px;letter-spacing:.26em;text-transform:uppercase;white-space:nowrap;}
-  .divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1;}
-  .label{font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;align-items:center;}
-  .label .x{color:var(--accent);letter-spacing:0;}
+  aside{flex:0 0 var(--aside);border-right:1px solid var(--line);padding:12px 18px 22px;display:flex;flex-direction:column;gap:6px;background:var(--panel);overflow-y:auto;}
+  .asidetools{display:flex;justify-content:flex-end;gap:12px;margin-bottom:2px;}
+  .linkbtn{background:none;border:0;padding:2px 0;font-size:11px;letter-spacing:.04em;text-transform:none;color:var(--faint);cursor:pointer;}
+  .linkbtn:hover{color:var(--accent);background:none;}
+
+  .group{display:flex;flex-direction:column;gap:10px;padding:10px 0 12px;border-bottom:1px solid var(--line);}
+  .gbody{display:flex;flex-direction:column;gap:10px;}
+  .group.collapsed{padding-bottom:10px;}
+  .group.collapsed .gbody{display:none;}
+  .divider{display:flex;align-items:center;gap:10px;margin:14px 0 0;color:#c9a15f;font-size:10.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;}
+  .divider::before,.divider::after{content:"";height:1px;background:var(--accent-dim);flex:1;opacity:.6;}
+
+  .label{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--title);font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:18px;}
+  .label .x{color:var(--accent);letter-spacing:0;font-size:12.5px;font-weight:400;text-transform:none;}
   .lt{display:inline-flex;align-items:center;gap:7px;min-width:0;}
-  .sublabel{letter-spacing:.16em;color:var(--muted);text-transform:none;}
-  .help{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid var(--line);border-radius:50%;color:var(--muted);font-size:9px;font-weight:600;letter-spacing:0;cursor:help;flex:0 0 auto;user-select:none;}
+  .sublabel{letter-spacing:.04em;color:var(--muted);text-transform:none;font-weight:400;font-size:12px;}
+  .ghead{cursor:pointer;user-select:none;margin:-3px -6px;padding:3px 6px;border-radius:3px;}
+  .ghead:hover{background:var(--panel-2);}
+  .ghead .lt::before{content:"";flex:0 0 auto;width:0;height:0;border-left:4.5px solid transparent;border-right:4.5px solid transparent;border-top:6px solid var(--muted);transition:transform .15s;}
+  .group.collapsed .ghead .lt::before{transform:rotate(-90deg);}
+  .help{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--line-strong);border-radius:50%;color:var(--muted);font-size:9.5px;font-weight:600;letter-spacing:0;cursor:help;flex:0 0 auto;user-select:none;text-transform:none;}
   .help:hover,.help:focus{border-color:var(--accent);color:var(--accent);outline:none;}
-  #tip{position:fixed;display:none;max-width:300px;background:#0f1114;border:1px solid var(--accent-dim);border-radius:5px;padding:11px 13px;color:var(--ink);font-family:var(--serif);font-size:13.5px;font-style:normal;line-height:1.5;letter-spacing:0;text-transform:none;z-index:200;box-shadow:0 10px 34px rgba(0,0,0,.55);pointer-events:none;}
+  #tip{position:fixed;display:none;max-width:320px;background:#101215;border:1px solid var(--accent-dim);border-radius:5px;padding:11px 13px;color:var(--ink);font-family:var(--serif);font-size:14px;font-style:normal;line-height:1.5;letter-spacing:0;text-transform:none;z-index:200;box-shadow:0 10px 34px rgba(0,0,0,.6);pointer-events:none;}
   #tip b{color:var(--accent);font-weight:600;} #tip code{color:var(--accent);font-family:var(--mono);font-size:.92em;}
-  select{appearance:none;width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:9px 11px;font-family:var(--mono);font-size:13px;cursor:pointer;
+
+  select{appearance:none;width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line-strong);border-radius:3px;padding:8px 30px 8px 10px;font-family:var(--mono);font-size:13px;cursor:pointer;
     background-image:linear-gradient(45deg,transparent 50%,var(--accent) 50%),linear-gradient(135deg,var(--accent) 50%,transparent 50%);
-    background-position:calc(100% - 16px) 16px,calc(100% - 11px) 16px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
-  select:focus{outline:none;border-color:var(--accent-dim);}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--line);border-radius:2px;}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
-  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
-  .warn{font-size:10.5px;color:#c98a6a;font-family:var(--mono);line-height:1.4;margin-top:2px;}
-  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  button{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);padding:10px 8px;border-radius:3px;cursor:pointer;transition:.12s;}
-  button:hover{border-color:var(--accent-dim);color:var(--accent);}
-  button.primary{grid-column:1 / -1;background:var(--accent);color:#171205;border-color:var(--accent);font-weight:600;}
-  button.primary:hover{filter:brightness(1.08);color:#171205;}
+    background-position:calc(100% - 16px) 15px,calc(100% - 11px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
+  select:hover{border-color:var(--accent-dim);}
+  option{background:var(--panel-2);color:var(--ink);}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;margin:0;background:transparent;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--line-strong);border-radius:2px;}
+  input[type=range]::-moz-range-track{height:3px;background:var(--line-strong);border-radius:2px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;margin-top:-6px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);}
+  .warn{font-size:11px;color:var(--warn);font-family:var(--mono);line-height:1.45;}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  button{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;background:var(--panel-2);color:var(--ink);border:1px solid var(--line-strong);padding:9px 8px;border-radius:3px;cursor:pointer;transition:.12s;}
+  button:hover{border-color:var(--accent);color:var(--accent);background:var(--panel-3);}
+  button.primary{background:var(--accent);color:#1a1406;border-color:var(--accent);font-weight:600;}
+  button.primary:hover{filter:brightness(1.08);color:#1a1406;background:var(--accent);}
   button.wide{grid-column:1 / -1;}
-  #layerList{display:flex;flex-direction:column;gap:6px;margin-bottom:9px;}
-  .lrow{display:flex;align-items:stretch;gap:8px;padding:6px;border:1px solid var(--line);border-radius:3px;background:var(--panel-2);}
-  .lrow.sel{border-color:var(--accent);background:rgba(216,166,87,0.10);}
-  .lthumb{position:relative;flex:0 0 52px;width:52px;height:52px;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid var(--line);background:#000;}
+  button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+  button:disabled,select:disabled,input:disabled{opacity:.4;cursor:not-allowed;}
+  button:disabled:hover{border-color:var(--line-strong);color:var(--ink);background:var(--panel-2);}
+  .label:has(+ input:disabled),.label:has(+ select:disabled){opacity:.45;}
+
+  #layerList{display:flex;flex-direction:column;gap:6px;}
+  .lrow{display:flex;align-items:stretch;gap:9px;padding:6px;border:1px solid var(--line);border-radius:3px;background:var(--panel-2);}
+  .lrow.sel{border-color:var(--accent);background:var(--accent-soft);}
+  .lthumb{position:relative;flex:0 0 56px;width:56px;height:56px;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid var(--line-strong);background:#000;}
   .lrow.sel .lthumb{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
-  .lthumb:focus-visible{outline:1px solid var(--accent);outline-offset:1px;}
   .lthumb canvas{display:block;width:100%;height:100%;}
-  .lthumb.muted canvas{opacity:0.30;}
-  .lbadge{position:absolute;top:2px;left:4px;font-family:var(--mono);font-size:10px;font-weight:600;color:#fff;text-shadow:0 0 3px #000,0 0 4px #000;pointer-events:none;}
-  .lcol{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;}
-  .lon{padding:4px 8px;font-size:10px;letter-spacing:.08em;align-self:flex-start;}
-  .lon.off{opacity:0.55;}
-  .lop{width:100%;margin:0;}
-  .lop:disabled{opacity:0.35;}
-  button.on{border-color:var(--accent);color:var(--accent);}
-  label.file{display:block;text-align:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;background:var(--panel-2);border:1px dashed var(--line);padding:10px 8px;border-radius:3px;cursor:pointer;transition:.12s;}
-  label.file:hover{border-color:var(--accent-dim);color:var(--accent);}
+  .lthumb.muted canvas{opacity:0.3;}
+  .lbadge{position:absolute;top:2px;left:4px;font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;text-shadow:0 0 3px #000,0 0 4px #000;pointer-events:none;}
+  .lcol{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;}
+  .lmeta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);}
+  .lmeta .lg{color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lon{padding:3px 7px;font-size:10px;letter-spacing:.06em;margin-left:auto;flex:0 0 auto;}
+  .lon.off{opacity:0.6;}
+  .lop{width:100%;}
+
+  label.file{display:block;text-align:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;background:var(--panel-2);color:var(--ink);border:1px dashed var(--line-strong);padding:9px 8px;border-radius:3px;cursor:pointer;transition:.12s;}
+  label.file:hover{border-color:var(--accent);color:var(--accent);}
   input[type=file]{display:none;}
-  textarea#stateBox{width:100%;box-sizing:border-box;height:84px;resize:vertical;font-family:var(--mono);font-size:10.5px;line-height:1.4;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:8px;margin-bottom:8px;}
+  .seedname{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  textarea#stateBox{width:100%;height:80px;resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.4;color:var(--ink);background:var(--bg);border:1px solid var(--line-strong);border-radius:3px;padding:8px;}
   textarea#stateBox:focus{outline:none;border-color:var(--accent-dim);}
   code{font-family:var(--mono);font-size:.92em;color:var(--accent);}
-  .spacer{flex:1 1 auto;}
-  .readout{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--muted);}
-  .readout b{color:var(--ink);font-weight:500;}
 
-  section{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;gap:16px;min-width:0;background:radial-gradient(120% 120% at 50% 35%,#141518 0%,var(--bg) 70%);}
+  section{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 22px;gap:14px;min-width:0;overflow:auto;background:radial-gradient(120% 120% at 50% 35%,#15161a 0%,var(--bg) 70%);}
   .stage{display:flex;gap:26px;align-items:flex-start;}
-  figure{margin:0;display:flex;flex-direction:column;gap:9px;}
-  figcaption{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);display:flex;gap:8px;align-items:baseline;}
-  figcaption em{font-family:var(--serif);font-style:italic;text-transform:none;letter-spacing:0;color:var(--muted);font-size:12px;}
+  figure{margin:0;display:flex;flex-direction:column;gap:8px;}
+  figcaption{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--title);display:flex;gap:8px;align-items:baseline;}
+  figcaption em{font-family:var(--serif);font-style:italic;text-transform:none;letter-spacing:0;color:var(--muted);font-size:13px;}
   .frame{position:relative;line-height:0;box-shadow:0 0 0 1px var(--line),0 22px 50px -22px rgba(0,0,0,.8);}
-  .frame canvas{display:block;width:min(40vh,400px);height:min(40vh,400px);}
+  .frame canvas{display:block;width:var(--cv);height:var(--cv);}
   #overlay{position:absolute;inset:0;cursor:grab;}
   #overlay.dragging{cursor:grabbing;}
-  .annot{max-width:840px;text-align:center;display:flex;flex-direction:column;gap:5px;}
+
+  .transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;max-width:calc(2 * var(--cv) + 26px);width:100%;}
+  .transport button{min-width:92px;}
+  .readout{display:flex;flex-wrap:wrap;gap:4px 18px;margin-left:auto;font-size:12px;color:var(--muted);}
+  .readout b{color:var(--ink);font-weight:500;}
+  .annot{max-width:min(840px, calc(2 * var(--cv) + 26px));text-align:center;display:flex;flex-direction:column;gap:5px;}
   .annot .orb{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--accent);}
   .annot .orb .glyph{font-size:15px;color:var(--ink);margin-left:8px;}
-  .annot .note{font-family:var(--serif);font-size:14.5px;line-height:1.5;color:var(--muted);}
+  .annot .note{font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--muted);}
+
+  @media (max-width:900px){
+    :root{--cv:min(calc(100vw - 44px), 560px);}
+    body{overflow:auto;height:auto;}
+    main{flex-direction:column;}
+    aside{flex:none;border-right:0;overflow:visible;}
+    section{overflow:visible;order:-1;border-bottom:1px solid var(--line);}   /* images first on small screens */
+    .stage{flex-direction:column;align-items:center;}
+    .readout{margin-left:0;justify-content:center;}
+    header .sub{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -96,13 +139,19 @@
   <header id="appHeader">
     <span class="mark">Rosaic</span>
     <span class="sub">recursive mosaic · wallpaper feedback</span>
-    <span class="ver">v32</span>
+    <a class="gh" href="https://github.com/CasimirKaPazi/rosaic" target="_blank" rel="noopener">source on GitHub &#8599;</a>
+    <span class="ver">v34</span>
   </header>
 
   <main id="appMain">
     <aside>
-      <div class="group">
-        <div class="label"><span class="lt">Layers <span class="help" tabindex="0" data-tip="Each layer folds an image through its own symmetry group, frame, colour &amp; transform. <b>Stack</b> mode keeps a separate feedback buffer per layer (each a sharp coherent fractal) and overlays them; <b>Compose</b> mode chains them into one pipeline. Pick a layer (<b>A / B&hellip;</b>) to edit it, <b>Move</b> to reorder, or <b>shown / muted</b> to switch it off. Up to four layers.">?</span></span></div>
+      <div class="asidetools">
+        <button class="linkbtn" id="collapseAll" title="Collapse every settings group">collapse all</button>
+        <button class="linkbtn" id="expandAll" title="Expand every settings group">expand all</button>
+      </div>
+
+      <div class="group" data-key="layers">
+        <div class="label"><span class="lt">Layers <span class="help" tabindex="0" data-tip="Each layer folds an image through its own symmetry group, frame, colour &amp; transform. <b>Stack</b> mode keeps a separate feedback buffer per layer (each a sharp coherent fractal) and overlays them; <b>Compose</b> mode chains them into one pipeline. Click a thumbnail to edit that layer, <b>Move</b> to reorder, or <b>shown / muted</b> to switch it off. Up to four layers.">?</span></span></div>
         <select id="combineMode">
           <option value="stack">Stack &mdash; overlay layers (coupled)</option>
           <option value="compose">Compose &mdash; pipeline A&rarr;B&rarr;&hellip;</option>
@@ -114,7 +163,11 @@
           <button id="moveUp">Move up</button>
           <button id="moveDown">Move down</button>
         </div>
-        <div class="label"><span class="lt">Blend <span class="help" tabindex="0" data-tip="How upper layers combine onto the base in <b>Stack</b> mode. <b>Average</b> mixes by opacity but low-passes the feedback (detail blurs to the shared skeleton); <b>Lighten / Darken / Difference</b> select a value per pixel and keep structure better; <b>Multiply</b> is physical moir&eacute;; <b>Screen</b> brightens. Ignored in Compose mode.">?</span></span></div>
+      </div>
+
+      <div class="group" data-key="mixing">
+        <div class="label"><span class="lt">Stack mixing <span class="help" tabindex="0" data-tip="How the layers combine in <b>Stack</b> mode. Not used in Compose mode, where the layers form a pipeline instead.">?</span></span></div>
+        <div class="label"><span class="lt sublabel">blend <span class="help" tabindex="0" data-tip="How upper layers combine onto the base. <b>Average</b> mixes by opacity but low-passes the feedback (detail blurs to the shared skeleton); <b>Lighten / Darken / Difference</b> select a value per pixel and keep structure better; <b>Multiply</b> is physical moir&eacute;; <b>Screen</b> brightens.">?</span></span></div>
         <select id="blendMode">
           <option value="blend">Average &mdash; transparency</option>
           <option value="lighten">Lighten &mdash; per-pixel max</option>
@@ -123,25 +176,19 @@
           <option value="multiply">Multiply &mdash; moir&eacute;</option>
           <option value="screen">Screen</option>
         </select>
-        <div class="label"><span class="lt">Coupling <span class="help" tabindex="0" data-tip="In <b>Stack</b> mode, how much of the shared compound bleeds into every layer&rsquo;s own feedback each step. <b>0</b> = independent layers (sharp, optical moir&eacute;); <b>1</b> = all layers share one buffer (the averaged blur). Small values give interaction while keeping each layer&rsquo;s structure. Ignored in Compose mode.">?</span></span><span class="x" id="kappaVal">0.00</span></div>
+        <div class="label"><span class="lt sublabel">coupling <span class="help" tabindex="0" data-tip="How much of the shared compound bleeds into every layer&rsquo;s own feedback each step. <b>0</b> = independent layers (sharp, optical moir&eacute;); <b>1</b> = all layers share one buffer (the averaged blur). Small values give interaction while keeping each layer&rsquo;s structure.">?</span></span><span class="x" id="kappaVal">0.00</span></div>
         <input type="range" id="kappaRange" min="0" max="1" step="0.01" value="0">
       </div>
 
-      <div class="divider">Active layer</div>
+      <div class="divider" id="activeDivider">Active layer</div>
 
-      <div class="group">
+      <div class="group" data-key="group">
         <div class="label"><span class="lt">Symmetry group <span class="help" tabindex="0" data-tip="The wallpaper group whose symmetry the fold imposes &mdash; one of the 17. Its orbifold signature is shown beneath the Mosaic. Changing it re-shapes the fundamental domain and resets the frame to fit.">?</span></span></div>
         <select id="groupSel"></select>
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Boundaries <span class="help" tabindex="0" data-tip="The cell &amp; fold edges are drawn into the field each pass, so they nest into a self-similar lattice &mdash; and keep the feedback from washing out to a flat colour. The slider sets their opacity; the button toggles them off entirely.">?</span></span><span class="x" id="boundVal">0.45</span></div>
-        <input type="range" id="boundRange" min="0" max="0.9" step="0.05" value="0.45">
-        <button id="boundToggle" class="wide on">Boundaries on</button>
-      </div>
-
-      <div class="group">
-        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present).">?</span></span></div>
+      <div class="group" data-key="colour">
+        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present). <b>Class tint</b> and <b>tint falloff</b> apply to the last three modes.">?</span></span></div>
         <select id="colorMode">
           <option value="none">None</option>
           <option value="hue">Hue cycle (k-colouring)</option>
@@ -153,19 +200,25 @@
         <div class="label"><span class="lt sublabel">class tint</span><span class="x" id="wordVal">0.30</span></div>
         <input type="range" id="wordRange" min="0.05" max="0.8" step="0.05" value="0.3">
         <button id="tintFadeToggle" class="wide">Tint falloff: uniform</button>
-        <div class="warn">&#9888; Epilepsy note: with Play running, colour symmetry can flash. Pause if uncomfortable.</div>
+        <div class="warn">&#9888; With Play running, colour symmetry can flash. Pause if uncomfortable.</div>
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Feedback window <span class="help" tabindex="0" data-tip="The window is an affine <b>frame</b> shaped like the fundamental domain. Drag the body to move, the stem knob to rotate, the diamond to scale uniformly, or either round handle to stretch / shear one edge. The framed region fills the fundamental domain &mdash; the whole image survives the fold, not a sliver.">?</span></span></div>
+      <div class="group" data-key="bounds">
+        <div class="label"><span class="lt">Boundaries <span class="help" tabindex="0" data-tip="The cell &amp; fold edges are drawn into the field each pass, so they nest into a self-similar lattice &mdash; and keep the feedback from washing out to a flat colour. The slider sets their opacity; the button switches them off entirely.">?</span></span><span class="x" id="boundVal">0.45</span></div>
+        <input type="range" id="boundRange" min="0" max="0.9" step="0.05" value="0.45">
+        <button id="boundToggle" class="wide on">Boundaries: on</button>
+      </div>
+
+      <div class="group" data-key="frame">
+        <div class="label"><span class="lt">Feedback frame <span class="help" tabindex="0" data-tip="The affine <b>frame</b> on the Source panel, shaped like the fundamental domain, selects what gets folded. Drag the body to move, the stem knob to rotate, the diamond to scale uniformly, or either round handle to stretch / shear one edge. The framed region fills the fundamental domain &mdash; the whole image survives the fold, not a sliver.">?</span></span></div>
         <div class="btns">
-          <button id="winToggle" class="wide on">Show window</button>
-          <button id="winReset" class="wide">Reset frame</button>
+          <button id="winToggle" class="on">Frame: shown</button>
+          <button id="winReset">Reset frame</button>
         </div>
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Animate frame <span class="help" tabindex="0" data-tip="Slowly moves the active layer&rsquo;s affine frame while everything renders live, so the feedback morphs. <b>Spin</b> rotates (spirals), <b>Breathe</b> pulses scale (tunnels), <b>Orbit</b> drifts it in a circle. Grab any handle to freeze and re-aim. Strongest with <b>Play</b> running.">?</span></span></div>
+      <div class="group" data-key="anim">
+        <div class="label"><span class="lt">Animate frame <span class="help" tabindex="0" data-tip="Slowly moves the active layer&rsquo;s frame while everything renders live, so the feedback morphs. <b>Spin</b> rotates (spirals), <b>Breathe</b> pulses scale (tunnels), <b>Orbit</b> drifts it in a circle. Grabbing the frame stops the animation. Strongest with <b>Play</b> running.">?</span></span></div>
         <select id="animMode">
           <option value="off">Off</option>
           <option value="spin">Spin &mdash; rotate (spirals)</option>
@@ -177,8 +230,8 @@
         <input type="range" id="animSpeedRange" min="0.05" max="2" step="0.05" value="0.5">
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Layer transform <span class="help" tabindex="0" data-tip="Rotates &amp; scales this layer&rsquo;s whole tiling about the canvas centre. Static while idle &mdash; a clean re-orientation. Under <b>Play</b> it feeds back, so rotation spirals and scale &ne; 1 tunnels in or out. Identity (0&deg;, 1&times;) leaves the layer untouched.">?</span></span></div>
+      <div class="group" data-key="transform">
+        <div class="label"><span class="lt">Layer transform <span class="help" tabindex="0" data-tip="Rotates &amp; scales this layer&rsquo;s whole tiling about the canvas centre. Static while idle &mdash; a clean re-orientation. Under <b>Play</b> it feeds back, so rotation spirals and scale &ne; 1 tunnels in or out. Identity (0&deg;, 1&times;) leaves the layer untouched. Double-click a slider to reset it.">?</span></span></div>
         <div class="label"><span class="lt sublabel">rotation</span><span class="x" id="rotVal">0&deg;</span></div>
         <input type="range" id="rotRange" min="-180" max="180" step="1" value="0">
         <div class="label"><span class="lt sublabel">scale</span><span class="x" id="sclVal">1.00&times;</span></div>
@@ -187,12 +240,12 @@
 
       <div class="divider">Global</div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Cells across <span class="help" tabindex="0" data-tip="How many fundamental cells span the field &mdash; the tiling density. Shared across all layers.">?</span></span><span class="x" id="cellsVal">3</span></div>
+      <div class="group" data-key="cells">
+        <div class="label"><span class="lt">Cells across <span class="help" tabindex="0" data-tip="How many fundamental cells span the field &mdash; the tiling density. Shared across all layers; changing it restarts from the seed.">?</span></span><span class="x" id="cellsVal">3</span></div>
         <input type="range" id="cellsRange" min="2" max="8" step="1" value="3">
       </div>
 
-      <div class="group">
+      <div class="group" data-key="keepalive">
         <div class="label"><span class="lt">Keep-alive <span class="help" tabindex="0" data-tip="Two cures for the grey wash-out (visible while <b>Play</b> runs). <b>Seed re-inject</b> blends a little of the original seed back each pass; <b>vividness</b> boosts contrast &amp; saturation each pass to undo the blur&rsquo;s pull toward the mean.">?</span></span></div>
         <div class="label"><span class="lt sublabel">seed re-inject</span><span class="x" id="gainVal">0.00</span></div>
         <input type="range" id="gainRange" min="0" max="0.6" step="0.02" value="0">
@@ -200,23 +253,8 @@
         <input type="range" id="vividRange" min="0" max="0.5" step="0.02" value="0">
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">Iterate <span class="help" tabindex="0" data-tip="<b>Play</b> runs the feedback loop continuously; <b>Step</b> advances one iteration; <b>Reset seed</b> restarts every layer&rsquo;s buffer from the seed image (keeps your frames &amp; settings).">?</span></span></div>
-        <div class="btns">
-          <button id="playBtn" class="primary">Play</button>
-          <button id="stepBtn">Step</button>
-          <button id="resetBtn">Reset seed</button>
-        </div>
-      </div>
-
-      <div class="group">
-        <div class="label"><span class="lt">Seed image <span class="help" tabindex="0" data-tip="Load your own image as the seed that gets folded. Without one, a generated seed is used. If the image is a PNG saved by Rosaic, its settings are also read into the <b>State</b> box &mdash; press <b>Apply loaded settings</b> to use them.">?</span></span></div>
-        <label class="file" for="fileInp">Load image</label>
-        <input type="file" id="fileInp" accept="image/*">
-      </div>
-
-      <div class="group">
-        <div class="label"><span class="lt">Output resolution <span class="help" tabindex="0" data-tip="Internal canvas size in pixels &mdash; sets the render &amp; <b>Save PNG</b> resolution (the on-screen panels stay the same size). Higher is sharper but slower, and changing it restarts the feedback at the new size, so set it before a long run or before exporting. The exact field is shown in the readout below.">?</span></span></div>
+      <div class="group" data-key="resolution">
+        <div class="label"><span class="lt">Output resolution <span class="help" tabindex="0" data-tip="Internal canvas size in pixels &mdash; sets the render &amp; <b>Save PNG</b> resolution (the on-screen panels stay the same size). Higher is sharper but slower, and changing it restarts the feedback at the new size, so set it before a long run or before exporting. The exact size is shown under the canvases.">?</span></span></div>
         <select id="resSel">
           <option value="512">512 px</option>
           <option value="756" selected>756 px (default)</option>
@@ -226,34 +264,33 @@
         </select>
       </div>
 
-      <div class="group">
-        <div class="label"><span class="lt">State &amp; export <span class="help" tabindex="0" data-tip="<b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand. <b>Save PNG</b> downloads the current Mosaic panel at the output resolution above, with the settings stored inside the file (<code>it</code> = iterations at save time, for reference only). The saved settings don&rsquo;t include the seed image or the evolved state, so applying them restarts from the seed. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser &mdash; to keep or pass on (combine it with a copied state string to share a specific setup).">?</span></span></div>
+      <div class="group" data-key="state">
+        <div class="label"><span class="lt">Seed, state &amp; export <span class="help" tabindex="0" data-tip="<b>Seed</b>: load your own image as the seed that gets folded, or go back to the <b>generated</b> one. If the image is a PNG saved by Rosaic, its settings are also read into the state box &mdash; press <b>Apply loaded</b> to use them.<br><br><b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand.<br><br><b>Save PNG</b> downloads the current Mosaic panel at the output resolution, with the settings stored inside the file (<code>it</code> = iterations at save time, for reference only). The saved settings don&rsquo;t include the seed image or the evolved state, so applying them restarts from the seed. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser.">?</span></span></div>
+        <div class="label"><span class="lt sublabel">seed image</span></div>
+        <div class="btns">
+          <label class="file" for="fileInp">Load image</label>
+          <button id="seedDefault">Generated</button>
+        </div>
+        <input type="file" id="fileInp" accept="image/*">
+        <div class="seedname" id="seedName">Seed: generated</div>
+        <div class="label"><span class="lt sublabel">state</span></div>
         <textarea id="stateBox" spellcheck="false" placeholder="Copy state to capture the current settings here&hellip;"></textarea>
         <div class="btns">
-          <button id="copyState" class="wide">Copy state</button>
-          <button id="applyState" class="wide">Apply</button>
+          <button id="copyState">Copy state</button>
+          <button id="applyState">Apply</button>
         </div>
+        <div class="label"><span class="lt sublabel">export</span></div>
         <div class="btns">
           <button id="savePng">Save PNG</button>
           <button id="saveHtml">Save Rosaic</button>
         </div>
-      </div>
-
-      <div class="spacer"></div>
-
-      <div class="readout">
-        <div>iteration &nbsp;<b id="iterOut">0</b></div>
-        <div>frame U &middot; V &nbsp;<b id="winScaleOut">100% &middot; 100%</b></div>
-        <div>frame angle &nbsp;<b id="winAngOut">90&deg;</b></div>
-        <div>fold copies &nbsp;<b id="copiesOut">1</b></div>
-        <div>output &nbsp;<b id="resOut">756 &times; 756 px</b></div>
       </div>
     </aside>
 
     <section>
       <div class="stage">
         <figure>
-          <figcaption>Source <em>&mdash; drag the window</em></figcaption>
+          <figcaption>Source <em>&mdash; active layer&rsquo;s input, drag the frame</em></figcaption>
           <div class="frame">
             <canvas id="source"></canvas>
             <canvas id="overlay"></canvas>
@@ -265,6 +302,18 @@
             <canvas id="view"></canvas>
           </div>
         </figure>
+      </div>
+      <div class="transport">
+        <button id="playBtn" class="primary">Play</button>
+        <button id="stepBtn">Step</button>
+        <button id="resetBtn">Reset seed</button>
+        <span class="help" tabindex="0" data-tip="<b>Play</b> runs the feedback loop continuously; <b>Step</b> advances one iteration; <b>Reset seed</b> restarts every layer from the seed image (keeps your frames &amp; settings). Keys: <b>Space</b> play / pause, <b>S</b> step, <b>R</b> reset seed.">?</span>
+        <div class="readout">
+          <span>iteration <b id="iterOut">0</b></span>
+          <span>frame <b id="winScaleOut">100% &middot; 100%</b> <b id="winAngOut">90&deg;</b></span>
+          <span>folds <b id="copiesOut">1</b></span>
+          <span><b id="resOut">756 &times; 756 px</b></span>
+        </div>
       </div>
       <div class="annot">
         <div class="orb">orbifold <span class="glyph" id="orbOut">o</span></div>
@@ -947,7 +996,7 @@ function hitTest(px,py){
 overlay.addEventListener("pointerdown", e=>{
   if(!showWindow) return;
   const [px,py]=evtField(e), hit=hitTest(px,py); if(!hit) return;
-  if(animMode!=="off"){ animMode="off"; animSel.value="off"; animRef=null; }  // grabbing the frame freezes it at its current pose
+  if(animMode!=="off"){ animMode="off"; animSel.value="off"; animRef=null; syncModeUI(); }  // grabbing the frame freezes it at its current pose
   overlay.setPointerCapture(e.pointerId); overlay.classList.add("dragging");
   drag={...hit, px,py};
   if(hit.mode==="rotate" || hit.mode==="scale"){
@@ -1074,7 +1123,7 @@ function syncControls(){
   gainRange.value=seedGain; gainVal.textContent=seedGain.toFixed(2);
   vividRange.value=vivid; vividVal.textContent=vivid.toFixed(2);
   boundRange.value=boundA; boundVal.textContent=boundA.toFixed(2);
-  boundToggle.classList.toggle("on",boundOn); boundToggle.textContent=boundOn?"Boundaries on":"Boundaries off";
+  syncBoundToggle();
   animSel.value=animMode; animSpeedRange.value=animSpeed; animSpeedVal.textContent=animSpeed.toFixed(2);
   rotRange.value=gRotDeg; rotVal.textContent=gRotDeg+"\u00B0";
   sclRange.value=gScl; sclVal.textContent=gScl.toFixed(2)+"\u00D7";
@@ -1083,6 +1132,14 @@ function syncControls(){
   combineSel.value=combineMode; syncCombineUI();
   resSel.value=String(BASE);
   tintFadeToggle.classList.toggle("on",tintFade); tintFadeToggle.textContent="Tint falloff: "+(tintFade?"center":"uniform");
+  syncModeUI();
+}
+function syncBoundToggle(){ boundToggle.classList.toggle("on",boundOn); boundToggle.textContent="Boundaries: "+(boundOn?"on":"off"); }
+/* disable controls that have no effect in the current mode, so it is visible what applies */
+function syncModeUI(){
+  const tint=(colorMode==="word"||colorMode==="rotcoset"||colorMode==="orient");
+  wordRange.disabled=!tint; tintFadeToggle.disabled=!tint;
+  animSpeedRange.disabled=(animMode==="off");
 }
 function applyState(s){
   if(!s||typeof s!=="object") return;
@@ -1115,7 +1172,7 @@ function applyState(s){
 
 /* ---- layer management UI (v18) ---- */
 const LETTERS=["A","B","C","D"];
-const layerListEl=document.getElementById("layerList");
+const layerListEl=document.getElementById("layerList"), activeDivider=document.getElementById("activeDivider");
 const addLayerBtn=document.getElementById("addLayer"), removeLayerBtn=document.getElementById("removeLayer");
 const moveUpBtn=document.getElementById("moveUp"), moveDownBtn=document.getElementById("moveDown");
 function firstEnabled(){ for(let i=0;i<layers.length;i++) if(layers[i].on) return i; return -1; }
@@ -1135,16 +1192,24 @@ function renderLayerList(){
     th.addEventListener("click",()=>setActive(i));
     th.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); setActive(i); } });
     const col=document.createElement("div"); col.className="lcol";
+    const gk=(i===active)?groupKey():L.g, gr=GROUPS[gk]||GROUPS.p1;
+    const meta=document.createElement("div"); meta.className="lmeta";
+    const lg=document.createElement("span"); lg.className="lg"; lg.textContent=gk+" \u00B7 "+gr.orbifold;
     const on=document.createElement("button"); on.className="lon"+(L.on?"":" off"); on.textContent=L.on?"shown":"muted";
     on.title="show / mute this layer"; on.addEventListener("click",()=>toggleLayer(i));
+    meta.appendChild(lg); meta.appendChild(on);
     const op=document.createElement("input"); op.type="range"; op.className="lop";
     op.min="0"; op.max="1"; op.step="0.01"; op.value=(L.op!==undefined?L.op:1);
-    op.disabled=(i===fe); op.title=(i===fe)?"first shown layer is the opaque base":"opacity over the layers below";
+    const compose=(combineMode==="compose");
+    op.disabled=compose||(i===fe);
+    op.title=compose?"opacity is not used in Compose mode":(i===fe)?"first shown layer is the opaque base":"opacity over the layers below";
+    op.setAttribute("aria-label","layer "+(LETTERS[i]||i+1)+" opacity");
     op.addEventListener("input",e=>setLayerOpacity(i,+e.target.value));
-    col.appendChild(on); col.appendChild(op);
+    col.appendChild(meta); col.appendChild(op);
     row.appendChild(th); row.appendChild(col);
     layerListEl.appendChild(row);
   });
+  activeDivider.textContent="Active layer \u00B7 "+(LETTERS[active]||("L"+(active+1)));
   addLayerBtn.disabled = layers.length>=MAX_LAYERS;
   removeLayerBtn.disabled = layers.length<=1;
   moveUpBtn.disabled = active<=0;
@@ -1201,18 +1266,18 @@ moveDownBtn.addEventListener("click",()=>moveLayer(1));
 blendSel.addEventListener("change", e=>{ blendMode=e.target.value; renderView(); });
 kappaRange.addEventListener("input", e=>{ kappa=+e.target.value; kappaVal.textContent=kappa.toFixed(2); });
 function syncCombineUI(){ const stack=(combineMode!=="compose"); blendSel.disabled=!stack; kappaRange.disabled=!stack; }
-combineSel.addEventListener("change", e=>{ combineMode=e.target.value; syncCombineUI(); setPlaying(false); reset(false); });
+combineSel.addEventListener("change", e=>{ combineMode=e.target.value; syncCombineUI(); renderLayerList(); setPlaying(false); reset(false); });
 resSel.addEventListener("change", e=>{ BASE=+e.target.value; setPlaying(false); reset(false); });
 
 for(const key of Object.keys(GROUPS)){ const o=document.createElement("option"); o.value=key; o.textContent=key+"   \u00B7   "+GROUPS[key].orbifold; groupSel.appendChild(o); }
-groupSel.addEventListener("change", e=>{ group=GROUPS[e.target.value]; reset(true); });
+groupSel.addEventListener("change", e=>{ group=GROUPS[e.target.value]; reset(true); renderLayerList(); });
 cellsRange.addEventListener("input", e=>{ N=+e.target.value; cellsVal.textContent=N; reset(false); });
 boundRange.addEventListener("input", e=>{ boundA=+e.target.value; boundVal.textContent=boundA.toFixed(2); });
-boundToggle.addEventListener("click", ()=>{ boundOn=!boundOn; boundToggle.classList.toggle("on",boundOn); boundToggle.textContent=boundOn?"Boundaries on":"Boundaries off"; });
-colorMode_el.addEventListener("change", e=>{ colorMode=e.target.value; });
+boundToggle.addEventListener("click", ()=>{ boundOn=!boundOn; syncBoundToggle(); });
+colorMode_el.addEventListener("change", e=>{ colorMode=e.target.value; syncModeUI(); });
 wordRange.addEventListener("input", e=>{ wordAlpha=+e.target.value; wordVal.textContent=wordAlpha.toFixed(2); });
 tintFadeToggle.addEventListener("click", ()=>{ tintFade=!tintFade; tintFadeToggle.classList.toggle("on",tintFade); tintFadeToggle.textContent="Tint falloff: "+(tintFade?"center":"uniform"); renderView(); });
-animSel.addEventListener("change", e=>{ animMode=e.target.value; if(animMode==="off") animRef=null; else snapAnim(); });
+animSel.addEventListener("change", e=>{ animMode=e.target.value; if(animMode==="off") animRef=null; else snapAnim(); syncModeUI(); });
 animSpeedRange.addEventListener("input", e=>{ animSpeed=+e.target.value; animSpeedVal.textContent=animSpeed.toFixed(2); });
 rotRange.addEventListener("input", e=>{ gRotDeg=+e.target.value; rotVal.textContent=gRotDeg+"\u00B0"; });
 sclRange.addEventListener("input", e=>{ gScl=+e.target.value; sclVal.textContent=gScl.toFixed(2)+"\u00D7"; });
@@ -1221,17 +1286,20 @@ vividRange.addEventListener("input", e=>{ vivid=+e.target.value; vividVal.textCo
 playBtn.addEventListener("click", ()=>setPlaying(!playing));
 stepBtn.addEventListener("click", ()=>{ setPlaying(false); commitFeedback(); renderView(); });
 resetBtn.addEventListener("click", ()=>{ setPlaying(false); reset(false); });
-winToggle.addEventListener("click", ()=>{ showWindow=!showWindow; winToggle.classList.toggle("on",showWindow); winToggle.textContent=showWindow?"Show window":"Window hidden"; });
+winToggle.addEventListener("click", ()=>{ showWindow=!showWindow; winToggle.classList.toggle("on",showWindow); winToggle.textContent="Frame: "+(showWindow?"shown":"hidden"); });
 winReset.addEventListener("click", ()=>{ defaultFrame(); updateWinReadout(); });
 fileInp.addEventListener("change", async e=>{
   const f=e.target.files[0]; if(!f) return;
-  const img=new Image(); img.onload=()=>{ seedImg=img; setPlaying(false); reset(false); }; img.src=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{ seedImg=img; seedName.textContent="Seed: "+f.name; seedName.title=f.name; setPlaying(false); reset(false); };
+  img.onerror=()=>{ seedName.textContent="Could not read "+f.name+" as an image"; };
+  img.src=URL.createObjectURL(f);
   /* a Rosaic PNG carries its settings: put them in the state box, leave applying to the viewer */
   let text=null;
   try{ text=pngReadText(new Uint8Array(await f.arrayBuffer()), PNG_KEY); }catch(err){ text=null; }
   if(text){
     stateBox.value=text;
-    applyStateBtn.classList.add("on"); applyStateBtn.textContent="Apply loaded settings";
+    applyStateBtn.classList.add("on"); applyStateBtn.textContent="Apply loaded";
   }
   e.target.value="";   // allow loading the same file again
 });
@@ -1298,9 +1366,56 @@ document.addEventListener("click",e=>{ if(!e.target.classList||!e.target.classLi
 for(const ev of ["input","change","click","keydown"]) document.addEventListener(ev, markDirty, true);
 window.addEventListener("resize", markDirty);   // overlay handle sizes depend on the displayed canvas size
 
+/* ---- seed: back to the generated image ---- */
+const seedName=document.getElementById("seedName");
+document.getElementById("seedDefault").addEventListener("click", ()=>{
+  seedImg=null; seedName.textContent="Seed: generated"; seedName.title=""; setPlaying(false); reset(false);
+});
+
+/* ---- collapsible settings groups (v33) -----------------------------
+   Each group's first label becomes a clickable header; everything after it
+   goes into a body that can be hidden. Which groups are collapsed is kept in
+   this browser (localStorage) and is not part of the copied state.        */
+const COLLAPSE_KEY="rosaic.collapsed";
+let collapsedSet={}; try{ collapsedSet=JSON.parse(localStorage.getItem(COLLAPSE_KEY)||"{}")||{}; }catch(e){ collapsedSet={}; }
+function saveCollapsed(){ try{ localStorage.setItem(COLLAPSE_KEY, JSON.stringify(collapsedSet)); }catch(e){} }
+const groupEls=[];
+document.querySelectorAll("aside .group").forEach(g=>{
+  const head=g.querySelector(".label"); if(!head||head.parentNode!==g) return;
+  const body=document.createElement("div"); body.className="gbody";
+  while(head.nextSibling) body.appendChild(head.nextSibling);
+  g.appendChild(body);
+  head.classList.add("ghead"); head.setAttribute("role","button"); head.tabIndex=0;
+  const key=g.dataset.key||head.textContent.trim();
+  g._setCollapsed=c=>{ g.classList.toggle("collapsed",c); head.setAttribute("aria-expanded",String(!c)); collapsedSet[key]=c; };
+  g._setCollapsed(!!collapsedSet[key]);
+  head.addEventListener("click",e=>{ if(e.target.closest(".help")) return; g._setCollapsed(!g.classList.contains("collapsed")); saveCollapsed(); });
+  head.addEventListener("keydown",e=>{ if(e.target!==head) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); head.click(); } });
+  groupEls.push(g);
+});
+document.getElementById("collapseAll").addEventListener("click",()=>{ groupEls.forEach(g=>g._setCollapsed(true)); saveCollapsed(); });
+document.getElementById("expandAll").addEventListener("click",()=>{ groupEls.forEach(g=>g._setCollapsed(false)); saveCollapsed(); });
+
+/* double-click a settings slider to return it to its default */
+document.querySelectorAll("aside .gbody input[type=range]").forEach(r=>{
+  r.addEventListener("dblclick",()=>{ if(r.disabled) return; r.value=r.defaultValue; r.dispatchEvent(new Event("input",{bubbles:true})); });
+});
+
+/* keyboard: Space play/pause, S step, R reset seed, Esc closes a help tip.
+   Ignored while typing or while a control has focus, so keys keep their usual meaning there. */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ hideTip(); return; }
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey) return;   // already handled (e.g. a focused layer thumbnail)
+  const t=e.target, tag=t&&t.tagName;
+  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||tag==="BUTTON"||(t&&t.isContentEditable)||(t&&t.getAttribute&&t.getAttribute("role")==="button")) return;
+  if(e.key===" "){ e.preventDefault(); setPlaying(!playing); }
+  else if(e.key==="s"||e.key==="S"){ setPlaying(false); commitFeedback(); renderView(); }
+  else if(e.key==="r"||e.key==="R"){ setPlaying(false); reset(false); }
+});
+
+syncModeUI();
+renderLayerList();
 requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
-</body></html>
