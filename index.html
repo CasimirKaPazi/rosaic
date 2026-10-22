@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rosaic — recursive mosaic · v34</title>
+<title>Rosaic — recursive mosaic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
@@ -30,7 +30,6 @@
   header .sub{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:15px;}
   header .gh{margin-left:auto;font-size:12px;color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line-strong);padding-bottom:1px;}
   header .gh:hover{color:var(--accent);border-color:var(--accent);}
-  header .ver{color:var(--accent);font-size:11px;letter-spacing:.16em;border:1px solid var(--accent-dim);padding:2px 8px;border-radius:2px;}
 
   main{flex:1 1 auto;display:flex;min-height:0;}
   aside{flex:0 0 var(--aside);border-right:1px solid var(--line);padding:12px 18px 22px;display:flex;flex-direction:column;gap:6px;background:var(--panel);overflow-y:auto;}
@@ -140,7 +139,6 @@
     <span class="mark">Rosaic</span>
     <span class="sub">recursive mosaic · wallpaper feedback</span>
     <a class="gh" href="https://github.com/CasimirKaPazi/rosaic" target="_blank" rel="noopener">source on GitHub &#8599;</a>
-    <span class="ver">v34</span>
   </header>
 
   <main id="appMain">
@@ -188,7 +186,7 @@
       </div>
 
       <div class="group" data-key="colour">
-        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present). <b>Class tint</b> and <b>tint falloff</b> apply to the last three modes.">?</span></span></div>
+        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present). <b>Class tint</b> and <b>tint falloff</b> apply to the last three modes.<br><br><b>Hue shift</b>, <b>saturation</b> and <b>contrast</b> are applied to this layer once per feedback step, so they compound while <b>Play</b> runs: a small hue shift makes the colours cycle, saturation or contrast above 1&times; counter the grey wash-out, below 1&times; let the image fade and soften. The panels always show one step&rsquo;s worth. Double-click a slider to return it to neutral.">?</span></span></div>
         <select id="colorMode">
           <option value="none">None</option>
           <option value="hue">Hue cycle (k-colouring)</option>
@@ -200,6 +198,12 @@
         <div class="label"><span class="lt sublabel">class tint</span><span class="x" id="wordVal">0.30</span></div>
         <input type="range" id="wordRange" min="0.05" max="0.8" step="0.05" value="0.3">
         <button id="tintFadeToggle" class="wide">Tint falloff: uniform</button>
+        <div class="label"><span class="lt sublabel">hue shift / step</span><span class="x" id="hueVal">0&deg;</span></div>
+        <input type="range" id="hueRange" min="-30" max="30" step="0.5" value="0">
+        <div class="label"><span class="lt sublabel">saturation / step</span><span class="x" id="satVal">1.00&times;</span></div>
+        <input type="range" id="satRange" min="0.8" max="1.8" step="0.01" value="1">
+        <div class="label"><span class="lt sublabel">contrast / step</span><span class="x" id="conVal">1.00&times;</span></div>
+        <input type="range" id="conRange" min="0.8" max="1.6" step="0.01" value="1">
         <div class="warn">&#9888; With Play running, colour symmetry can flash. Pause if uncomfortable.</div>
       </div>
 
@@ -245,14 +249,6 @@
         <input type="range" id="cellsRange" min="2" max="8" step="1" value="3">
       </div>
 
-      <div class="group" data-key="keepalive">
-        <div class="label"><span class="lt">Keep-alive <span class="help" tabindex="0" data-tip="Two cures for the grey wash-out (visible while <b>Play</b> runs). <b>Seed re-inject</b> blends a little of the original seed back each pass; <b>vividness</b> boosts contrast &amp; saturation each pass to undo the blur&rsquo;s pull toward the mean.">?</span></span></div>
-        <div class="label"><span class="lt sublabel">seed re-inject</span><span class="x" id="gainVal">0.00</span></div>
-        <input type="range" id="gainRange" min="0" max="0.6" step="0.02" value="0">
-        <div class="label"><span class="lt sublabel">vividness / step</span><span class="x" id="vividVal">0.00</span></div>
-        <input type="range" id="vividRange" min="0" max="0.5" step="0.02" value="0">
-      </div>
-
       <div class="group" data-key="resolution">
         <div class="label"><span class="lt">Output resolution <span class="help" tabindex="0" data-tip="Internal canvas size in pixels &mdash; sets the render &amp; <b>Save PNG</b> resolution (the on-screen panels stay the same size). Higher is sharper but slower, and changing it restarts the feedback at the new size, so set it before a long run or before exporting. The exact size is shown under the canvases.">?</span></span></div>
         <select id="resSel">
@@ -265,7 +261,7 @@
       </div>
 
       <div class="group" data-key="state">
-        <div class="label"><span class="lt">Seed, state &amp; export <span class="help" tabindex="0" data-tip="<b>Seed</b>: load your own image as the seed that gets folded, or go back to the <b>generated</b> one. If the image is a PNG saved by Rosaic, its settings are also read into the state box &mdash; press <b>Apply loaded</b> to use them.<br><br><b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand.<br><br><b>Save PNG</b> downloads the current Mosaic panel at the output resolution, with the settings stored inside the file (<code>it</code> = iterations at save time, for reference only). The saved settings don&rsquo;t include the seed image or the evolved state, so applying them restarts from the seed. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser.">?</span></span></div>
+        <div class="label"><span class="lt">Seed, state &amp; export <span class="help" tabindex="0" data-tip="<b>Seed</b>: load your own image as the seed that gets folded, or go back to the <b>generated</b> one. <b>Seed re-inject</b> blends a little of the seed back into every layer each step while <b>Play</b> runs, so the original detail never fully washes out. If the image is a PNG saved by Rosaic, its settings are also read into the state box &mdash; press <b>Apply loaded</b> to use them.<br><br><b>Copy state</b> captures every layer, frame, colour &amp; slider as text you can save or share. Edit the numbers (e.g. a frame&rsquo;s <code>o / u / v</code>) and <b>Apply</b> to set them by hand.<br><br><b>Save PNG</b> downloads the current Mosaic panel at the output resolution, with the settings stored inside the file (<code>it</code> = iterations at save time, for reference only). The saved settings don&rsquo;t include the seed image or the evolved state, so applying them restarts from the seed. <b>Save Rosaic</b> downloads the whole tool as a single HTML file that runs offline in any browser.">?</span></span></div>
         <div class="label"><span class="lt sublabel">seed image</span></div>
         <div class="btns">
           <label class="file" for="fileInp">Load image</label>
@@ -273,6 +269,8 @@
         </div>
         <input type="file" id="fileInp" accept="image/*">
         <div class="seedname" id="seedName">Seed: generated</div>
+        <div class="label"><span class="lt sublabel">seed re-inject / step</span><span class="x" id="gainVal">0.00</span></div>
+        <input type="range" id="gainRange" min="0" max="0.6" step="0.02" value="0">
         <div class="label"><span class="lt sublabel">state</span></div>
         <textarea id="stateBox" spellcheck="false" placeholder="Copy state to capture the current settings here&hellip;"></textarea>
         <div class="btns">
@@ -500,7 +498,9 @@ const fileInp=document.getElementById("fileInp");
 const winToggle=document.getElementById("winToggle"), winReset=document.getElementById("winReset");
 const colorMode_el=document.getElementById("colorMode");
 const gainRange=document.getElementById("gainRange"), gainVal=document.getElementById("gainVal");
-const vividRange=document.getElementById("vividRange"), vividVal=document.getElementById("vividVal");
+const hueRange=document.getElementById("hueRange"), hueVal=document.getElementById("hueVal");
+const satRange=document.getElementById("satRange"), satVal=document.getElementById("satVal");
+const conRange=document.getElementById("conRange"), conVal=document.getElementById("conVal");
 const wordRange=document.getElementById("wordRange"), wordVal=document.getElementById("wordVal");
 const tintFadeToggle=document.getElementById("tintFadeToggle");
 const stateBox=document.getElementById("stateBox"), copyState=document.getElementById("copyState"), applyStateBtn=document.getElementById("applyState"), savePng=document.getElementById("savePng");
@@ -531,7 +531,7 @@ let group=GROUPS.p1;
 let iter=0, playing=false, seedImg=null, showWindow=true;
 let boundOn=true, boundA=0.45;
 let colorMode="none";       // "none" | "hue" | "invert" | "word" | "rotcoset" | "orient"
-let seedGain=0, vivid=0;    // keep-alive: seed re-injection, per-step contrast/saturation boost
+let seedGain=0;             // seed re-injection per step (global)
 let blendMode="blend";      // how upper layers combine onto the base (app-level)
 let kappa=0;                // coupling: each layer feeds back (1-k)*itself + k*compound. 0 = independent (sharp), 1 = fully shared (old blur)
 let combineMode="stack";    // "stack" = parallel coupled overlay | "compose" = pipeline F_last(..F_B(F_A(S)))
@@ -707,7 +707,9 @@ function buildContent(src){
   nctx.setTransform(1,0,0,1,0,0); nctx.clearRect(0,0,CS,CS);
   nctx.save();
   nctx.setTransform(m[0],m[1],m[2],m[3],m[4],m[5]);   // source -> cell coords
+  nctx.filter=layerFilter();                          // this layer's per-step hue / saturation / contrast
   nctx.drawImage(src,0,0);
+  nctx.filter="none";
   nctx.restore();
 }
 /* fold content into one symmetric cell, then draw the fold/cell edges on top */
@@ -797,6 +799,15 @@ function buildCellHex(){
    the canvas so rotation/scale never leave uncovered corners. Under coupled
    feedback the transformed output is what feeds back, so it compounds.     */
 let gRotDeg=0, gScl=1;
+/* per-layer colour adjustment, applied once per fold (= once per feedback step) */
+let gHue=0, gSat=1, gCon=1;
+function layerFilter(){
+  const f=[];
+  if(gHue) f.push("hue-rotate("+gHue+"deg)");
+  if(gSat!==1) f.push("saturate("+gSat+")");
+  if(gCon!==1) f.push("contrast("+gCon+")");
+  return f.length?f.join(" "):"none";
+}
 function globalMatrix(){
   const th=gRotDeg*Math.PI/180, s=gScl, c=FIELD/2;
   const a=s*Math.cos(th), b=s*Math.sin(th), cc=-s*Math.sin(th), d=s*Math.cos(th);
@@ -920,17 +931,13 @@ function commitFeedback(){
   if(combineMode==="compose"){
     const c=srcBuf[0].getContext("2d");
     c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation="source-over"; c.globalAlpha=1; c.clearRect(0,0,FIELD,FIELD);
-    c.filter = vivid>0 ? ("contrast("+(1+vivid).toFixed(3)+") saturate("+(1+1.4*vivid).toFixed(3)+")") : "none";
     if(composeLast>=0) c.drawImage(buf[composeLast],0,0);            // pipeline output -> input (one coherent map)
-    c.filter="none";
     if(seedGain>0){ c.globalAlpha=seedGain; c.drawImage(seed,0,0); c.globalAlpha=1; }
   } else {
     for(let i=0;i<layers.length;i++){ if(!layers[i].on) continue;
       const c=srcBuf[i].getContext("2d");
       c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation="source-over"; c.globalAlpha=1; c.clearRect(0,0,FIELD,FIELD);
-      c.filter = vivid>0 ? ("contrast("+(1+vivid).toFixed(3)+") saturate("+(1+1.4*vivid).toFixed(3)+")") : "none";
       c.drawImage(buf[i],0,0);                                        // self term  out[i]
-      c.filter="none";
       if(kappa>0){ c.globalAlpha=kappa; c.drawImage(view,0,0); c.globalAlpha=1; }   // (1-k)*out[i] + k*C
       if(seedGain>0){ c.globalAlpha=seedGain; c.drawImage(seed,0,0); c.globalAlpha=1; }
     }
@@ -1080,16 +1087,17 @@ function groupKey(){ for(const k of Object.keys(GROUPS)) if(GROUPS[k]===group) r
    group, affine frame (o,u,v), colour, boundaries, frame animation, and the
    global transform. The per-layer settings live in module globals (the
    "active" layer's working set); readLayer snapshots them, writeLayer loads
-   them back. N, seed-gain and vividness act on the shared compound, so they
+   them back. N and seed re-inject act on all layers, so they
    stay app-level. */
 function readLayer(){ const cur=(layers&&layers[active])||{};
   return { g:groupKey(),
   o:[...win.o], u:[...win.u], v:[...win.v],
   cm:colorMode, wa:wordAlpha, b:boundOn, ba:boundA,
-  am:animMode, as:animSpeed, rot:gRotDeg, scl:gScl,
+  am:animMode, as:animSpeed, rot:gRotDeg, scl:gScl, hs:gHue, sat:gSat, con:gCon,
   on: cur.on!==undefined?cur.on:true, op: cur.op!==undefined?cur.op:1 }; }
 function serLayer(L){ return { g:L.g, o:L.o.map(r4), u:L.u.map(r4), v:L.v.map(r4),
   cm:L.cm, wa:r4(L.wa), b:L.b, ba:r4(L.ba), am:L.am, as:r4(L.as), rot:L.rot, scl:r4(L.scl),
+  hs:r4(L.hs), sat:r4(L.sat), con:r4(L.con),
   on:L.on!==false, op:r4(L.op!==undefined?L.op:1) }; }
 const COLOR_MODES=["none","hue","invert","word","rotcoset","orient"];
 const ANIM_MODES=["off","spin","breathe","orbit","spinbreathe"];
@@ -1106,6 +1114,9 @@ function writeLayer(L){ if(!L||typeof L!=="object") return;
   if(Number.isFinite(L.as)) animSpeed=clamp(L.as,0,10);
   if(Number.isFinite(L.rot)) gRotDeg=L.rot;
   if(Number.isFinite(L.scl)) gScl=clamp(L.scl,0.05,20);           // must stay invertible
+  if(Number.isFinite(L.hs)) gHue=clamp(L.hs,-180,180);
+  if(Number.isFinite(L.sat)) gSat=clamp(L.sat,0,4);
+  if(Number.isFinite(L.con)) gCon=clamp(L.con,0,4);
 }
 let active=0;
 let layers;                 // declared first so readLayer() can read it without hitting the TDZ
@@ -1113,7 +1124,7 @@ layers=[readLayer()];
 
 function serializeState(){
   layers[active]=readLayer();
-  return { v:2, N, sg:r4(seedGain), vv:r4(vivid), bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
+  return { v:2, N, sg:r4(seedGain), bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
 }
 function syncControls(){
   groupSel.value=groupKey();
@@ -1121,7 +1132,9 @@ function syncControls(){
   colorMode_el.value=colorMode;
   wordRange.value=wordAlpha; wordVal.textContent=wordAlpha.toFixed(2);
   gainRange.value=seedGain; gainVal.textContent=seedGain.toFixed(2);
-  vividRange.value=vivid; vividVal.textContent=vivid.toFixed(2);
+  hueRange.value=gHue; hueVal.textContent=fmtHue(gHue);
+  satRange.value=gSat; satVal.textContent=gSat.toFixed(2)+"\u00D7";
+  conRange.value=gCon; conVal.textContent=gCon.toFixed(2)+"\u00D7";
   boundRange.value=boundA; boundVal.textContent=boundA.toFixed(2);
   syncBoundToggle();
   animSel.value=animMode; animSpeedRange.value=animSpeed; animSpeedVal.textContent=animSpeed.toFixed(2);
@@ -1145,7 +1158,10 @@ function applyState(s){
   if(!s||typeof s!=="object") return;
   if(Number.isFinite(s.N)) N=Math.max(2,Math.min(8,Math.round(s.N)));
   if(Number.isFinite(s.sg)) seedGain=clamp(s.sg,0,1);
-  if(Number.isFinite(s.vv)) vivid=clamp(s.vv,0,2);
+  /* colour defaults for layers that don't set them: neutral, or converted from the
+     old global "vividness" (vv), which was contrast(1+vv) saturate(1+1.4 vv) per step */
+  const vv=Number.isFinite(s.vv)?clamp(s.vv,0,2):0;
+  const colourDefaults=L=>Object.assign({ hs:0, sat:+(1+1.4*vv).toFixed(4), con:+(1+vv).toFixed(4) }, L);
   if(typeof s.bm==="string" && BLENDOP[s.bm]) blendMode=s.bm;
   if(Number.isFinite(s.k)) kappa=Math.max(0,Math.min(1,s.k));
   if(s.cmb==="stack"||s.cmb==="compose") combineMode=s.cmb;
@@ -1154,13 +1170,13 @@ function applyState(s){
   if(Array.isArray(s.layers)){                       // v2 layered format
     let ls = s.layers.slice(0,MAX_LAYERS).filter(L=>L&&typeof L==="object").map(L=>Object.assign({}, L, { on:L.on!==false, op:Number.isFinite(L.op)?clamp(L.op,0,1):1 }));
     if(!ls.length) ls=[readLayer()];
-    ls = ls.map(L=>{ writeLayer(L); const n=readLayer(); n.on=L.on; n.op=L.op; return n; });   // validate every layer's fields
+    ls = ls.map(L=>{ writeLayer(colourDefaults(L)); const n=readLayer(); n.on=L.on; n.op=L.op; return n; });   // validate every layer's fields
     if(!ls.some(l=>l.on)) ls[0].on=true;             // keep at least one shown
     layers = ls;
     active = Math.max(0, Math.min(layers.length-1, s.active|0));
     writeLayer(layers[active]);
   } else {                                            // v1 flat format (back-compat)
-    writeLayer({ g:s.g, o:s.o, u:s.u, v:s.v, cm:s.cm, wa:s.wa, b:s.b, ba:s.ba, am:s.am, as:s.as, rot:s.rot, scl:s.scl });
+    writeLayer(colourDefaults({ g:s.g, o:s.o, u:s.u, v:s.v, cm:s.cm, wa:s.wa, b:s.b, ba:s.ba, am:s.am, as:s.as, rot:s.rot, scl:s.scl }));
     layers=[readLayer()]; active=0;
   }
   syncControls();
@@ -1282,7 +1298,10 @@ animSpeedRange.addEventListener("input", e=>{ animSpeed=+e.target.value; animSpe
 rotRange.addEventListener("input", e=>{ gRotDeg=+e.target.value; rotVal.textContent=gRotDeg+"\u00B0"; });
 sclRange.addEventListener("input", e=>{ gScl=+e.target.value; sclVal.textContent=gScl.toFixed(2)+"\u00D7"; });
 gainRange.addEventListener("input", e=>{ seedGain=+e.target.value; gainVal.textContent=seedGain.toFixed(2); });
-vividRange.addEventListener("input", e=>{ vivid=+e.target.value; vividVal.textContent=vivid.toFixed(2); });
+function fmtHue(h){ return (h>0?"+":"")+h+"\u00B0"; }
+hueRange.addEventListener("input", e=>{ gHue=+e.target.value; hueVal.textContent=fmtHue(gHue); });
+satRange.addEventListener("input", e=>{ gSat=+e.target.value; satVal.textContent=gSat.toFixed(2)+"\u00D7"; });
+conRange.addEventListener("input", e=>{ gCon=+e.target.value; conVal.textContent=gCon.toFixed(2)+"\u00D7"; });
 playBtn.addEventListener("click", ()=>setPlaying(!playing));
 stepBtn.addEventListener("click", ()=>{ setPlaying(false); commitFeedback(); renderView(); });
 resetBtn.addEventListener("click", ()=>{ setPlaying(false); reset(false); });
