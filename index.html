@@ -516,7 +516,7 @@ const orbOut=document.getElementById("orbOut"), noteOut=document.getElementById(
 
 /* offscreen */
 const seed=document.createElement("canvas"), sdCtx=seed.getContext("2d");        // persistent seed
-const content=document.createElement("canvas"), nctx=content.getContext("2d");   // framed source mapped into cell coords (CS x CS)
+const content=document.createElement("canvas"), nctx=content.getContext("2d",{willReadFrequently:true});   // framed source mapped into cell coords (CS x CS)
 const cell=document.createElement("canvas"), cctx=cell.getContext("2d");         // one folded cell
 const MAX_LAYERS=4;
 const buf=[]; for(let i=0;i<MAX_LAYERS;i++){ buf.push(document.createElement("canvas")); }   // per-layer tiled output  out[i] = F_i(srcBuf[i])
@@ -707,10 +707,9 @@ function buildContent(src){
   nctx.setTransform(1,0,0,1,0,0); nctx.clearRect(0,0,CS,CS);
   nctx.save();
   nctx.setTransform(m[0],m[1],m[2],m[3],m[4],m[5]);   // source -> cell coords
-  nctx.filter=layerFilter();                          // this layer's per-step hue / saturation / contrast
   nctx.drawImage(src,0,0);
-  nctx.filter="none";
   nctx.restore();
+  colourAdjust(nctx,CS,CS);                           // this layer's per-step hue / saturation / contrast
 }
 /* fold content into one symmetric cell, then draw the fold/cell edges on top */
 function buildCell(){ if(group.lattice==="hex") buildCellHex(); else buildCellSquare(); }
@@ -801,12 +800,35 @@ function buildCellHex(){
 let gRotDeg=0, gScl=1;
 /* per-layer colour adjustment, applied once per fold (= once per feedback step) */
 let gHue=0, gSat=1, gCon=1;
-function layerFilter(){
-  const f=[];
-  if(gHue) f.push("hue-rotate("+gHue+"deg)");
-  if(gSat!==1) f.push("saturate("+gSat+")");
-  if(gCon!==1) f.push("contrast("+gCon+")");
-  return f.length?f.join(" "):"none";
+/* The adjustment is computed here rather than with the canvas `filter` property:
+   browsers render filtered draws through a different pipeline (GPU / colour
+   management), which can shift colours abruptly the moment any filter is on, and
+   older Safari ignores canvas filters altogether. These are the CSS Filter Effects
+   matrices (hue-rotate, saturate, contrast), composed into one affine colour map
+   and applied in sRGB, so the result is the same in every browser. */
+function colourMatrix(){
+  const mul=(A,B)=>{ const C=[]; for(let r=0;r<3;r++){ C.push([0,0,0,0]);
+    for(let c=0;c<4;c++){ let v=(c===3?A[r][3]:0); for(let k=0;k<3;k++) v+=A[r][k]*B[k][c]; C[r][c]=v; } } return C; };
+  const a=gHue*Math.PI/180, co=Math.cos(a), si=Math.sin(a), s=gSat, k=gCon;
+  const H=[[0.213+co*0.787-si*0.213, 0.715-co*0.715-si*0.715, 0.072-co*0.072+si*0.928, 0],
+           [0.213-co*0.213+si*0.143, 0.715+co*0.285+si*0.140, 0.072-co*0.072-si*0.283, 0],
+           [0.213-co*0.213-si*0.787, 0.715-co*0.715+si*0.715, 0.072+co*0.928+si*0.072, 0]];
+  const Sm=[[0.213+0.787*s, 0.715-0.715*s, 0.072-0.072*s, 0],
+            [0.213-0.213*s, 0.715+0.285*s, 0.072-0.072*s, 0],
+            [0.213-0.213*s, 0.715-0.715*s, 0.072+0.928*s, 0]];
+  const Cm=[[k,0,0,(1-k)*0.5*255],[0,k,0,(1-k)*0.5*255],[0,0,k,(1-k)*0.5*255]];
+  return mul(Cm, mul(Sm, H));      // hue first, then saturation, then contrast
+}
+function colourAdjust(ctx,w,h){
+  if(gHue===0 && gSat===1 && gCon===1) return;
+  const M=colourMatrix(), img=ctx.getImageData(0,0,w,h), d=img.data;
+  const [a0,a1,a2,a3]=M[0], [b0,b1,b2,b3]=M[1], [c0,c1,c2,c3]=M[2];
+  for(let i=0;i<d.length;i+=4){
+    if(d[i+3]===0) continue;
+    const r=d[i], g=d[i+1], b=d[i+2];
+    d[i]=a0*r+a1*g+a2*b+a3; d[i+1]=b0*r+b1*g+b2*b+b3; d[i+2]=c0*r+c1*g+c2*b+c3;   // Uint8ClampedArray rounds & clamps
+  }
+  ctx.putImageData(img,0,0);
 }
 function globalMatrix(){
   const th=gRotDeg*Math.PI/180, s=gScl, c=FIELD/2;
