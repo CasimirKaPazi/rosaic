@@ -1337,6 +1337,14 @@ applyStateBtn.addEventListener("click", ()=>{
 });
 const saveHtml=document.getElementById("saveHtml");
 async function reportSave(btn, res){ if(res!=="saved" && res!=="declined") flash(btn, res==="too_large"?"Too large":"Unavailable"); }
+/* suggested PNG name: the shown layers' groups in stack / pipeline order, then local date and time,
+   e.g. "p31m+p6m-2026-10-22-143052.png" */
+function pngName(){
+  if(layers&&layers.length) layers[active]=readLayer();
+  const gs=layers.filter(L=>L.on).map(L=>L.g).join("+")||groupKey();
+  const d=new Date(), z=n=>String(n).padStart(2,"0");
+  return gs+"-"+d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"-"+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+".png";
+}
 savePng.addEventListener("click", ()=>{
   const meta=JSON.stringify(Object.assign(serializeState(), { it:iter }));   // "it" = iterations at save time (for reference; Apply ignores it)
   view.toBlob(async b=>{
@@ -1344,7 +1352,7 @@ savePng.addEventListener("click", ()=>{
     let out=b;
     try{ const u8=new Uint8Array(await b.arrayBuffer()); if(isPng(u8)) out=new Blob([pngWithText(u8,PNG_KEY,meta)],{type:"image/png"}); }
     catch(e){ out=b; }                                                     // fall back to a plain PNG
-    reportSave(savePng, await offerFile("rosaic.png", out));
+    reportSave(savePng, await offerFile(pngName(), out));
   }, "image/png");
 });
 if(!SELF) saveHtml.disabled=true;
