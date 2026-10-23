@@ -244,6 +244,17 @@
 
       <div class="divider">Global</div>
 
+      <div class="group" data-key="names">
+        <div class="label"><span class="lt">Group names in picture <span class="help" tabindex="0" data-tip="Writes each layer&rsquo;s group name (e.g. <b>p31m</b>) into its fundamental domain before the fold, so the name becomes part of the image: the fold copies it into every domain &mdash; mirrored by mirrors and glides, turned by rotations &mdash; and the feedback nests it at every scale. In <b>Compose</b> mode each stage writes its own name, so you can see which stage did what. All names have the same size; in the smallest domains they run over the edge and the fold joins the pieces. The slider sets the opacity (0&nbsp;% = off), the menu the style. It is also in saved PNGs.">?</span></span><span class="x" id="nameVal">0&nbsp;%</span></div>
+        <input type="range" id="nameRange" min="0" max="100" step="1" value="0">
+        <select id="nameStyle" disabled>
+          <option value="etched">Etched &mdash; pressed into the image</option>
+          <option value="ink">Ink &mdash; plain light letters</option>
+          <option value="glow">Glow &mdash; warm halo</option>
+          <option value="invert">Invert &mdash; negative of the image</option>
+        </select>
+      </div>
+
       <div class="group" data-key="cells">
         <div class="label"><span class="lt">Cells across <span class="help" tabindex="0" data-tip="How many fundamental cells span the field &mdash; the tiling density. Shared across all layers; changing it restarts from the seed.">?</span></span><span class="x" id="cellsVal">3</span></div>
         <input type="range" id="cellsRange" min="2" max="8" step="1" value="3">
@@ -512,6 +523,7 @@ const kappaRange=document.getElementById("kappaRange"), kappaVal=document.getEle
 const combineSel=document.getElementById("combineMode");
 const iterOut=document.getElementById("iterOut"), winScaleOut=document.getElementById("winScaleOut"), winAngOut=document.getElementById("winAngOut"), copiesOut=document.getElementById("copiesOut");
 const resOut=document.getElementById("resOut"), resSel=document.getElementById("resSel");
+const nameRange=document.getElementById("nameRange"), nameVal=document.getElementById("nameVal"), nameStyleSel=document.getElementById("nameStyle");
 const orbOut=document.getElementById("orbOut"), noteOut=document.getElementById("noteOut");
 
 /* offscreen */
@@ -532,6 +544,7 @@ let iter=0, playing=false, seedImg=null, showWindow=true;
 let boundOn=true, boundA=0.45;
 let colorMode="none";       // "none" | "hue" | "invert" | "word" | "rotcoset" | "orient"
 let seedGain=0;             // seed re-injection per step (global)
+let nameAlpha=0;            // opacity of the group name written into each fundamental domain (global, 0 = off)
 let blendMode="blend";      // how upper layers combine onto the base (app-level)
 let kappa=0;                // coupling: each layer feeds back (1-k)*itself + k*compound. 0 = independent (sharp), 1 = fully shared (old blur)
 let combineMode="stack";    // "stack" = parallel coupled overlay | "compose" = pipeline F_last(..F_B(F_A(S)))
@@ -710,6 +723,37 @@ function buildContent(src){
   nctx.drawImage(src,0,0);
   nctx.restore();
   colourAdjust(nctx,CS,CS);                           // this layer's per-step hue / saturation / contrast
+  if(nameAlpha>0) stampName(nctx);                    // the group name, written into the domain before folding
+}
+/* the fundamental domain polygon in cell (content) coordinates */
+function domainPoly(){
+  if(group.lattice==="hex"){ const C=CS/2; return group.wedge(hexR).map(([x,y])=>[x+C,y+C]); }
+  return FD[group.fd](S);
+}
+/* write the group name at the domain's centroid. One size for every group
+   (relative to the cell), so the names read as one family across groups; in the
+   smallest domains (p6m, p4m, cmm) the name runs over the domain edge and the fold
+   joins the clipped pieces with their images. Styles:
+     etched - pressed into the surface (dark/light offset, multiply + screen),
+              so the letters take on the colours underneath
+     ink    - plain light letters
+     glow   - light letters with a warm halo
+     invert - the letters invert the colours underneath (difference with white) */
+let nameStyle="etched";
+const NAME_STYLES=["etched","ink","glow","invert"];
+function stampName(ctx){
+  const P=domainPoly(), n=P.length; let cx=0,cy=0; for(const [x,y] of P){ cx+=x; cy+=y; } cx/=n; cy/=n;
+  const name=groupKey(), fs=0.13*S;
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+  ctx.font="500 "+fs.toFixed(1)+"px 'IBM Plex Mono', ui-monospace, monospace";
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.globalAlpha=nameAlpha;
+  if(nameStyle==="ink"){ ctx.fillStyle="#f3e9d2"; ctx.fillText(name,cx,cy); }
+  else if(nameStyle==="invert"){ ctx.globalCompositeOperation="difference"; ctx.fillStyle="#ffffff"; ctx.fillText(name,cx,cy); }
+  else if(nameStyle==="glow"){ ctx.shadowColor="rgba(227,180,104,0.9)"; ctx.shadowBlur=fs*0.35; ctx.fillStyle="#fff6e4"; ctx.fillText(name,cx,cy); }
+  else { const o=Math.max(1,fs*0.05);
+    ctx.globalCompositeOperation="multiply"; ctx.fillStyle="rgba(20,16,10,0.9)"; ctx.fillText(name,cx+o,cy+o);
+    ctx.globalCompositeOperation="screen";   ctx.fillStyle="rgba(255,240,215,0.9)"; ctx.fillText(name,cx-0.6*o,cy-0.6*o); }
+  ctx.restore();
 }
 /* fold content into one symmetric cell, then draw the fold/cell edges on top */
 function buildCell(){ if(group.lattice==="hex") buildCellHex(); else buildCellSquare(); }
@@ -1146,7 +1190,7 @@ layers=[readLayer()];
 
 function serializeState(){
   layers[active]=readLayer();
-  return { v:2, N, sg:r4(seedGain), bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
+  return { v:2, N, sg:r4(seedGain), nm:r4(nameAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
 }
 function syncControls(){
   groupSel.value=groupKey();
@@ -1154,6 +1198,7 @@ function syncControls(){
   colorMode_el.value=colorMode;
   wordRange.value=wordAlpha; wordVal.textContent=wordAlpha.toFixed(2);
   gainRange.value=seedGain; gainVal.textContent=seedGain.toFixed(2);
+  nameRange.value=Math.round(nameAlpha*100); nameVal.textContent=Math.round(nameAlpha*100)+"\u00A0%"; nameStyleSel.value=nameStyle; nameStyleSel.disabled=(nameAlpha===0);
   hueRange.value=gHue; hueVal.textContent=fmtHue(gHue);
   satRange.value=gSat; satVal.textContent=gSat.toFixed(2)+"\u00D7";
   conRange.value=gCon; conVal.textContent=gCon.toFixed(2)+"\u00D7";
@@ -1180,6 +1225,8 @@ function applyState(s){
   if(!s||typeof s!=="object") return;
   if(Number.isFinite(s.N)) N=Math.max(2,Math.min(8,Math.round(s.N)));
   if(Number.isFinite(s.sg)) seedGain=clamp(s.sg,0,1);
+  nameAlpha=Number.isFinite(s.nm)?clamp(s.nm,0,1):0;
+  nameStyle=NAME_STYLES.includes(s.ns)?s.ns:"etched";
   /* colour defaults for layers that don't set them: neutral, or converted from the
      old global "vividness" (vv), which was contrast(1+vv) saturate(1+1.4 vv) per step */
   const vv=Number.isFinite(s.vv)?clamp(s.vv,0,2):0;
@@ -1320,6 +1367,8 @@ animSpeedRange.addEventListener("input", e=>{ animSpeed=+e.target.value; animSpe
 rotRange.addEventListener("input", e=>{ gRotDeg=+e.target.value; rotVal.textContent=gRotDeg+"\u00B0"; });
 sclRange.addEventListener("input", e=>{ gScl=+e.target.value; sclVal.textContent=gScl.toFixed(2)+"\u00D7"; });
 gainRange.addEventListener("input", e=>{ seedGain=+e.target.value; gainVal.textContent=seedGain.toFixed(2); });
+nameRange.addEventListener("input", e=>{ nameAlpha=+e.target.value/100; nameVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0); });
+nameStyleSel.addEventListener("change", e=>{ nameStyle=e.target.value; });
 function fmtHue(h){ return (h>0?"+":"")+h+"\u00B0"; }
 hueRange.addEventListener("input", e=>{ gHue=+e.target.value; hueVal.textContent=fmtHue(gHue); });
 satRange.addEventListener("input", e=>{ gSat=+e.target.value; satVal.textContent=gSat.toFixed(2)+"\u00D7"; });
