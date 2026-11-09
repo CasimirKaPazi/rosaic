@@ -281,11 +281,15 @@
       <div class="divider">Global</div>
 
       <div class="group" data-key="names">
-        <div class="label"><span class="lt">Group names &amp; symbols <span class="help" tabindex="0" data-tip="<b>Names</b> writes each layer&rsquo;s group name (e.g. <b>p31m</b>) into its fundamental domain before the fold, so the fold copies it into every domain &mdash; mirrored by mirrors and glides, turned by rotations &mdash; and the feedback nests it at every scale. All names have the same size; in the smallest domains they run over the edge and the fold joins the pieces.<br><br><b>Symmetry symbols</b> draws the group&rsquo;s symmetry elements in the usual notation: rotation centres as an oval (2-fold), triangle (3-fold), square (4-fold) or hexagon (6-fold), mirror lines solid, glide axes dashed. They are computed from the group itself and drawn over each layer&rsquo;s tiling, so they follow the layer transform and, fed back, nest like the names.<br><br>In <b>Compose</b> mode each stage writes its own, so you can see which stage did what. 0&nbsp;% switches either off; the menu sets the style of both. Both are in saved PNGs.">?</span></span></div>
+        <div class="label"><span class="lt">Group names &amp; symbols <span class="help" tabindex="0" data-tip="<b>Names</b> writes each layer&rsquo;s group name (e.g. <b>p31m</b>) into its fundamental domain before the fold, so the fold copies it into every domain &mdash; mirrored by mirrors and glides, turned by rotations &mdash; and the feedback nests it at every scale. All names have the same size; in the smallest domains they run over the edge and the fold joins the pieces. The first menu chooses between the short name (<b>p4g</b>) and the orbifold signature (<b>4*2</b>).<br><br><b>Symmetry symbols</b> draws the group&rsquo;s symmetry elements in the usual notation: rotation centres as an oval (2-fold), triangle (3-fold), square (4-fold) or hexagon (6-fold), mirror lines solid, glide axes dashed. They are computed from the group itself and drawn over each layer&rsquo;s tiling, so they follow the layer transform and, fed back, nest like the names.<br><br>In <b>Compose</b> mode each stage writes its own, so you can see which stage did what. 0&nbsp;% switches either off; the menu sets the style of both. Both are in saved PNGs.">?</span></span></div>
         <div class="label"><span class="lt sublabel">names</span><span class="x" id="nameVal">0&nbsp;%</span></div>
         <input type="range" id="nameRange" min="0" max="100" step="1" value="0">
         <div class="label"><span class="lt sublabel">symmetry symbols</span><span class="x" id="symVal">0&nbsp;%</span></div>
         <input type="range" id="symRange" min="0" max="100" step="1" value="0">
+        <select id="nameKind" disabled>
+          <option value="iuc">Names as p4g &mdash; short (crystallographic)</option>
+          <option value="orb">Names as 4*2 &mdash; orbifold (Conway)</option>
+        </select>
         <select id="nameStyle" disabled>
           <option value="etched">Etched &mdash; pressed into the image</option>
           <option value="ink">Ink &mdash; plain light marks</option>
@@ -613,6 +617,7 @@ const iterOut=document.getElementById("iterOut"), winScaleOut=document.getElemen
 const resOut=document.getElementById("resOut"), resSel=document.getElementById("resSel");
 const nameRange=document.getElementById("nameRange"), nameVal=document.getElementById("nameVal"), nameStyleSel=document.getElementById("nameStyle");
 const symRange=document.getElementById("symRange"), symVal=document.getElementById("symVal");
+const nameKindSel=document.getElementById("nameKind");
 const orbOut=document.getElementById("orbOut"), noteOut=document.getElementById("noteOut");
 
 /* offscreen */
@@ -791,11 +796,9 @@ function drawSeed(ctx,w,h){
   const g=ctx.createLinearGradient(0,0,w,h);
   g.addColorStop(0,"#10243a"); g.addColorStop(0.5,"#23566b"); g.addColorStop(1,"#7c2f3a");
   ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-  for(const [x,y,r,col] of [[0.26,0.30,0.16,"#f0c14b"],[0.70,0.24,0.10,"#e8743b"],[0.58,0.66,0.20,"#46c0a0"],[0.34,0.74,0.09,"#d94f70"],[0.82,0.78,0.07,"#f4e7c9"]]){
+  for(const [x,y,r,col] of [[0.26,0.30,0.16,"#f0c14b"],[0.70,0.24,0.10,"#e8743b"],[0.58,0.66,0.20,"#46c0a0"],[0.34,0.74,0.09,"#d94f70"]]){
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x*w,y*h,r*Math.min(w,h),0,Math.PI*2); ctx.fill();
   }
-  ctx.strokeStyle="rgba(244,231,201,0.85)"; ctx.lineWidth=Math.max(2,w*0.012);
-  ctx.beginPath(); ctx.moveTo(0.12*w,0.86*h); ctx.lineTo(0.42*w,0.50*h); ctx.lineTo(0.30*w,0.18*h); ctx.stroke();
 }
 function paintSeed(){
   sdCtx.setTransform(1,0,0,1,0,0); sdCtx.clearRect(0,0,FIELD,FIELD);
@@ -831,10 +834,11 @@ function domainPoly(){
      glow   - light letters with a warm halo
      invert - the letters invert the colours underneath (difference with white) */
 let nameStyle="etched";
+let nameKind="iuc";       // "iuc" = short name (p4g), "orb" = orbifold signature (4*2)
 const NAME_STYLES=["etched","ink","glow","invert"];
 function stampName(ctx){
   const P=domainPoly(), n=P.length; let cx=0,cy=0; for(const [x,y] of P){ cx+=x; cy+=y; } cx/=n; cy/=n;
-  const name=groupKey(), fs=0.13*S;
+  const name=(nameKind==="orb")?group.orbifold:groupKey(), fs=0.13*S;
   ctx.save(); ctx.setTransform(1,0,0,1,0,0);
   ctx.font="500 "+fs.toFixed(1)+"px 'IBM Plex Mono', ui-monospace, monospace";
   ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.globalAlpha=nameAlpha;
@@ -1434,7 +1438,7 @@ layers=[readLayer()];
 
 function serializeState(){
   layers[active]=readLayer();
-  return { v:3, N, sg:r4(seedGain), nm:r4(nameAlpha), sy:r4(symAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
+  return { v:3, N, sg:r4(seedGain), nm:r4(nameAlpha), sy:r4(symAlpha), ns:nameStyle, nk:nameKind, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
 }
 function syncControls(){
   groupSel.value=groupKey();
@@ -1445,6 +1449,7 @@ function syncControls(){
   nameRange.value=Math.round(nameAlpha*100); nameVal.textContent=Math.round(nameAlpha*100)+"\u00A0%";
   symRange.value=Math.round(symAlpha*100); symVal.textContent=Math.round(symAlpha*100)+"\u00A0%";
   nameStyleSel.value=nameStyle; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0);
+  nameKindSel.value=nameKind; nameKindSel.disabled=(nameAlpha===0);
   hueRange.value=gHue; hueVal.textContent=fmtHue(gHue);
   satRange.value=gSat; satVal.textContent=gSat.toFixed(2)+"\u00D7";
   conRange.value=gCon; conVal.textContent=gCon.toFixed(2)+"\u00D7";
@@ -1474,6 +1479,7 @@ function applyState(s){
   nameAlpha=Number.isFinite(s.nm)?clamp(s.nm,0,1):0;
   symAlpha=Number.isFinite(s.sy)?clamp(s.sy,0,1):0;
   nameStyle=NAME_STYLES.includes(s.ns)?s.ns:"etched";
+  nameKind=(s.nk==="orb")?"orb":"iuc";
   /* colour defaults for layers that don't set them: neutral, or converted from the
      old global "vividness" (vv), which was contrast(1+vv) saturate(1+1.4 vv) per step */
   const vv=Number.isFinite(s.vv)?clamp(s.vv,0,2):0;
@@ -1619,9 +1625,10 @@ animSpeedRange.addEventListener("input", e=>{ animSpeed=+e.target.value; animSpe
 rotRange.addEventListener("input", e=>{ gRotDeg=+e.target.value; rotVal.textContent=gRotDeg+"\u00B0"; });
 sclRange.addEventListener("input", e=>{ gScl=+e.target.value; sclVal.textContent=gScl.toFixed(2)+"\u00D7"; });
 gainRange.addEventListener("input", e=>{ seedGain=+e.target.value; gainVal.textContent=seedGain.toFixed(2); });
-nameRange.addEventListener("input", e=>{ nameAlpha=+e.target.value/100; nameVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0); });
+nameRange.addEventListener("input", e=>{ nameAlpha=+e.target.value/100; nameVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0);  nameKindSel.disabled=(nameAlpha===0);});
 symRange.addEventListener("input", e=>{ symAlpha=+e.target.value/100; symVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0); });
 nameStyleSel.addEventListener("change", e=>{ nameStyle=e.target.value; });
+nameKindSel.addEventListener("change", e=>{ nameKind=e.target.value; });
 function fmtHue(h){ return (h>0?"+":"")+h+"\u00B0"; }
 hueRange.addEventListener("input", e=>{ gHue=+e.target.value; hueVal.textContent=fmtHue(gHue); });
 satRange.addEventListener("input", e=>{ gSat=+e.target.value; satVal.textContent=gSat.toFixed(2)+"\u00D7"; });
