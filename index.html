@@ -135,11 +135,12 @@
   .annot .orb{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--accent);}
   .annot .orb .glyph{font-size:15px;color:var(--ink);margin-left:8px;}
   .annot .note{font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--muted);}
-  .explain{margin-top:8px;text-align:left;border-top:1px solid var(--line);padding-top:8px;}
-  .explain summary{cursor:pointer;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--title);text-align:center;list-style:none;}
+  .explain{text-align:left;}
+  .explain summary{cursor:pointer;text-align:center;list-style:none;}
   .explain summary::-webkit-details-marker{display:none;}
   .explain summary::before{content:"\25B8  ";color:var(--muted);} .explain[open] summary::before{content:"\25BE  ";}
-  .explain summary:hover{color:var(--accent);}
+  .explain summary:hover .glyph{color:var(--accent);}
+  .explain[open] .excols{border-top:1px solid var(--line);padding-top:12px;}
   .excols{display:grid;grid-template-columns:1fr 1fr;gap:10px 34px;margin-top:12px;}
   .exh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
   .exnote{font-family:var(--serif);font-size:13.5px;line-height:1.45;color:var(--faint);margin-top:8px;}
@@ -394,9 +395,8 @@
         </div>
       </div>
       <div class="annot">
-        <div class="orb">orbifold <span class="glyph" id="orbOut">o</span></div>
         <details class="explain" id="explain" open>
-          <summary>How to read this group</summary>
+          <summary class="orb" title="Show / hide the explanation">orbifold <span class="glyph" id="orbOut">o</span></summary>
           <div class="excols">
             <div class="excol">
               <div class="exh">Orbifold signature, piece by piece</div>
@@ -934,9 +934,9 @@ function drawSymbols(ctx, box){
     ctx.setLineDash([]); ctx.beginPath();
     for(const A of E.axes) if(A.glide===0){ const [x0,y0,x1,y1]=seg(A); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); }
     ctx.stroke();
-    for(const A of E.axes) if(A.glide>0){                       // dash period = half the glide, so the glide maps it onto itself
-      const [x0,y0,x1,y1,t0]=seg(A), d=A.glide/4;
-      ctx.setLineDash([d,d]); ctx.lineDashOffset=t0; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); }
+    for(const A of E.axes) if(A.glide>0){                       // short dashes; a whole number of periods per glide, so the glide maps the pattern onto itself
+      const [x0,y0,x1,y1,t0]=seg(A), per=A.glide/Math.max(2,Math.round(A.glide/(6*lw))), d=per*0.45;
+      ctx.setLineDash([d,per-d]); ctx.lineDashOffset=t0; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); }
     ctx.setLineDash([]);
     ctx.beginPath();
     for(const c of E.centres){
