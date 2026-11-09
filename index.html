@@ -261,11 +261,14 @@
       <div class="divider">Global</div>
 
       <div class="group" data-key="names">
-        <div class="label"><span class="lt">Group names in picture <span class="help" tabindex="0" data-tip="Writes each layer&rsquo;s group name (e.g. <b>p31m</b>) into its fundamental domain before the fold, so the name becomes part of the image: the fold copies it into every domain &mdash; mirrored by mirrors and glides, turned by rotations &mdash; and the feedback nests it at every scale. In <b>Compose</b> mode each stage writes its own name, so you can see which stage did what. All names have the same size; in the smallest domains they run over the edge and the fold joins the pieces. The slider sets the opacity (0&nbsp;% = off), the menu the style. It is also in saved PNGs.">?</span></span><span class="x" id="nameVal">0&nbsp;%</span></div>
+        <div class="label"><span class="lt">Group names &amp; symbols <span class="help" tabindex="0" data-tip="<b>Names</b> writes each layer&rsquo;s group name (e.g. <b>p31m</b>) into its fundamental domain before the fold, so the fold copies it into every domain &mdash; mirrored by mirrors and glides, turned by rotations &mdash; and the feedback nests it at every scale. All names have the same size; in the smallest domains they run over the edge and the fold joins the pieces.<br><br><b>Symmetry symbols</b> draws the group&rsquo;s symmetry elements in the usual notation: rotation centres as an oval (2-fold), triangle (3-fold), square (4-fold) or hexagon (6-fold), mirror lines solid, glide axes dashed. They are computed from the group itself and drawn over each layer&rsquo;s tiling, so they follow the layer transform and, fed back, nest like the names.<br><br>In <b>Compose</b> mode each stage writes its own, so you can see which stage did what. 0&nbsp;% switches either off; the menu sets the style of both. Both are in saved PNGs.">?</span></span></div>
+        <div class="label"><span class="lt sublabel">names</span><span class="x" id="nameVal">0&nbsp;%</span></div>
         <input type="range" id="nameRange" min="0" max="100" step="1" value="0">
+        <div class="label"><span class="lt sublabel">symmetry symbols</span><span class="x" id="symVal">0&nbsp;%</span></div>
+        <input type="range" id="symRange" min="0" max="100" step="1" value="0">
         <select id="nameStyle" disabled>
           <option value="etched">Etched &mdash; pressed into the image</option>
-          <option value="ink">Ink &mdash; plain light letters</option>
+          <option value="ink">Ink &mdash; plain light marks</option>
           <option value="glow">Glow &mdash; warm halo</option>
           <option value="invert">Invert &mdash; negative of the image</option>
         </select>
@@ -571,6 +574,7 @@ const combineSel=document.getElementById("combineMode");
 const iterOut=document.getElementById("iterOut"), winScaleOut=document.getElementById("winScaleOut"), winAngOut=document.getElementById("winAngOut"), copiesOut=document.getElementById("copiesOut");
 const resOut=document.getElementById("resOut"), resSel=document.getElementById("resSel");
 const nameRange=document.getElementById("nameRange"), nameVal=document.getElementById("nameVal"), nameStyleSel=document.getElementById("nameStyle");
+const symRange=document.getElementById("symRange"), symVal=document.getElementById("symVal");
 const orbOut=document.getElementById("orbOut"), noteOut=document.getElementById("noteOut");
 
 /* offscreen */
@@ -593,6 +597,7 @@ let colorMode="none";       // "none" | "hue" | "invert" | "word" | "rotcoset" |
 let seedGain=0;             // seed re-injection per step (global)
 let evoOn=false;            // evolution mode: original + three variants (declared early: reset() checks it)
 let nameAlpha=0;            // opacity of the group name written into each fundamental domain (global, 0 = off)
+let symAlpha=0;             // opacity of the symmetry-element symbols drawn over each tiling (global, 0 = off)
 let blendMode="blend";      // how upper layers combine onto the base (app-level)
 let kappa=0;                // coupling: each layer feeds back (1-k)*itself + k*compound. 0 = independent (sharp), 1 = fully shared (old blur)
 let combineMode="stack";    // "stack" = parallel coupled overlay | "compose" = pipeline F_last(..F_B(F_A(S)))
@@ -803,6 +808,108 @@ function stampName(ctx){
     ctx.globalCompositeOperation="screen";   ctx.fillStyle="rgba(255,240,215,0.9)"; ctx.fillText(name,cx-0.6*o,cy-0.6*o); }
   ctx.restore();
 }
+/* ---- symmetry elements (v45) ------------------------------------
+   Derived from the group's own fold operations, in tiling coordinates (cell
+   (0,0) at the origin, before the layer transform). Every group element is an
+   op composed with a lattice translation x -> A x + t:
+     det A > 0, A != I : rotation, centre = fixed point (I-A)^-1 t, order from the angle
+     det A < 0         : reflection across the line x.n = (t.n)/2, slid by g = t.u
+                         along it; an axis is a mirror if some element on it has g = 0,
+                         otherwise a glide axis (shortest |g| = the glide)
+   Elements are gathered for the lattice translations covering the given box. */
+function groupAffines(grp){
+  if(grp.lattice==="hex") return grp.ops.map(op=>{ const L=op.lin; return [L[0][0],L[1][0],L[0][1],L[1][1],0,0]; });
+  return grp.ops.map(op=>op.m(S));
+}
+function latticeBasis(grp){
+  if(grp.lattice==="hex"){ const R=(2/3)*S, s3=Math.sqrt(3); return [[1.5*R, s3/2*R],[0, s3*R]]; }
+  return [[S,0],[0,S]];
+}
+function symmetryElements(grp, box){
+  const ops=groupAffines(grp), [b1,b2]=latticeBasis(grp), det=b1[0]*b2[1]-b1[1]*b2[0];
+  const toL=(x,y)=>[(x*b2[1]-y*b2[0])/det, (b1[0]*y-b1[1]*x)/det];      // tiling -> lattice coords
+  let n1Lo=1e9,n1Hi=-1e9,n2Lo=1e9,n2Hi=-1e9;
+  for(const [x,y] of [[box.mnx,box.mny],[box.mxx,box.mny],[box.mxx,box.mxy],[box.mnx,box.mxy]]){
+    const [a,b]=toL(x,y); n1Lo=Math.min(n1Lo,a); n1Hi=Math.max(n1Hi,a); n2Lo=Math.min(n2Lo,b); n2Hi=Math.max(n2Hi,b); }
+  n1Lo=Math.floor(n1Lo)-2; n1Hi=Math.ceil(n1Hi)+2; n2Lo=Math.floor(n2Lo)-2; n2Hi=Math.ceil(n2Hi)+2;
+  const pad=0.05*S, inBox=(x,y)=>x>=box.mnx-pad&&x<=box.mxx+pad&&y>=box.mny-pad&&y<=box.mxy+pad;
+  const centres=new Map(), axes=new Map(), q=v=>Math.round(v*64);
+  for(const [a,b,c,d,e,f] of ops){
+    const dt=a*d-b*c, ident=Math.abs(a-1)<1e-9&&Math.abs(d-1)<1e-9&&Math.abs(b)<1e-9&&Math.abs(c)<1e-9;
+    if(ident) continue;
+    for(let n1=n1Lo;n1<=n1Hi;n1++) for(let n2=n2Lo;n2<=n2Hi;n2++){
+      const tx=e+n1*b1[0]+n2*b2[0], ty=f+n1*b1[1]+n2*b2[1];
+      if(dt>0){
+        const m00=1-a, m01=-c, m10=-b, m11=1-d, D=m00*m11-m01*m10;          // (I-A) p = t
+        const px=(m11*tx-m01*ty)/D, py=(-m10*tx+m00*ty)/D;
+        if(!inBox(px,py)) continue;
+        let th=Math.abs(Math.atan2(b,a)); const k=Math.round(2*Math.PI/Math.min(th,2*Math.PI-th));
+        const key=q(px)+","+q(py), old=centres.get(key);
+        if(!old||old.k<k) centres.set(key,{x:px,y:py,k});
+      } else {
+        let ux=a+1, uy=b; if(Math.hypot(ux,uy)<1e-6){ ux=c; uy=d+1; }          // eigenvector for +1
+        let L=Math.hypot(ux,uy); ux/=L; uy/=L;
+        if(uy<-1e-9||(Math.abs(uy)<=1e-9&&ux<0)){ ux=-ux; uy=-uy; }           // direction in [0, pi)
+        const nx=-uy, ny=ux, off=(tx*nx+ty*ny)/2, g=tx*ux+ty*uy;
+        const key=Math.round(Math.atan2(uy,ux)*1e4)+":"+q(off), old=axes.get(key);
+        const ag=Math.abs(g)<1e-6?0:Math.abs(g);
+        if(!old) axes.set(key,{ux,uy,nx,ny,off,glide:ag});
+        else if(ag<old.glide) old.glide=ag;
+      }
+    }
+  }
+  const ax=[...axes.values()].filter(A=>{             // keep axes that cross the box
+    const cs=[[box.mnx,box.mny],[box.mxx,box.mny],[box.mxx,box.mxy],[box.mnx,box.mxy]].map(([x,y])=>x*A.nx+y*A.ny-A.off);
+    return Math.min(...cs)<=pad && Math.max(...cs)>=-pad; });
+  return { centres:[...centres.values()], axes:ax };
+}
+/* paint marks in the shared name style; paint(colour) builds and fills / strokes the path */
+function drawStyled(ctx, alpha, size, paint){
+  ctx.save(); ctx.globalAlpha=alpha;
+  if(nameStyle==="ink") paint("#f3e9d2");
+  else if(nameStyle==="invert"){ ctx.globalCompositeOperation="difference"; paint("#ffffff"); }
+  else if(nameStyle==="glow"){ ctx.shadowColor="rgba(227,180,104,0.9)"; ctx.shadowBlur=size*0.35; paint("#fff6e4"); }
+  else { const o=Math.max(1,size*0.05);
+    ctx.save(); ctx.translate(o,o); ctx.globalCompositeOperation="multiply"; paint("rgba(20,16,10,0.9)"); ctx.restore();
+    ctx.translate(-0.6*o,-0.6*o); ctx.globalCompositeOperation="screen"; paint("rgba(255,240,215,0.9)"); }
+  ctx.restore();
+}
+let symCache={key:"",E:null};
+/* draw the group's symmetry elements over a tiling; ctx carries the layer transform,
+   box is the visible region in tiling coordinates */
+function drawSymbols(ctx, box){
+  const key=groupKey()+"|"+S+"|"+[box.mnx,box.mny,box.mxx,box.mxy].map(v=>Math.round(v)).join(",");
+  if(symCache.key!==key){
+    const E=symmetryElements(group,box), tol=0.002*S;
+    for(const c of E.centres){                      // turn each symbol so it lines up with a mirror through it
+      const m=E.axes.find(A=>A.glide===0 && Math.abs(c.x*A.nx+c.y*A.ny-A.off)<tol);
+      c.ang = m ? Math.atan2(m.uy,m.ux) : (c.k===3?-Math.PI/2:c.k===4?Math.PI/4:0);
+    }
+    symCache={key,E};
+  }
+  const E=symCache.E; if(!E.centres.length && !E.axes.length) return;
+  const lw=Math.max(1,0.013*S), r=0.05*S, corners=[[box.mnx,box.mny],[box.mxx,box.mny],[box.mxx,box.mxy],[box.mnx,box.mxy]];
+  const seg=A=>{ const ts=corners.map(([x,y])=>x*A.ux+y*A.uy), px=A.off*A.nx, py=A.off*A.ny;
+    const t0=Math.min(...ts)-S, t1=Math.max(...ts)+S; return [px+t0*A.ux, py+t0*A.uy, px+t1*A.ux, py+t1*A.uy, t0]; };
+  drawStyled(ctx, symAlpha, 0.13*S, col=>{
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=lw; ctx.lineCap="butt";
+    ctx.setLineDash([]); ctx.beginPath();
+    for(const A of E.axes) if(A.glide===0){ const [x0,y0,x1,y1]=seg(A); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); }
+    ctx.stroke();
+    for(const A of E.axes) if(A.glide>0){                       // dash period = half the glide, so the glide maps it onto itself
+      const [x0,y0,x1,y1,t0]=seg(A), d=A.glide/4;
+      ctx.setLineDash([d,d]); ctx.lineDashOffset=t0; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    for(const c of E.centres){
+      if(c.k===2){ ctx.moveTo(c.x+r*Math.cos(c.ang),c.y+r*Math.sin(c.ang)); ctx.ellipse(c.x,c.y,r,r*0.55,c.ang,0,2*Math.PI); continue; }
+      const a0=c.ang+(c.k===4&&c.ang!==Math.PI/4?Math.PI/4:0), rr=(c.k===3)?r*1.15:r;   // vertex along the mirror (square: edges along it)
+      for(let i=0;i<=c.k;i++){ const a=a0+i*2*Math.PI/c.k, x=c.x+rr*Math.cos(a), y=c.y+rr*Math.sin(a); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+      ctx.closePath();
+    }
+    ctx.fill();
+  });
+}
 /* fold content into one symmetric cell, then draw the fold/cell edges on top */
 function buildCell(){ if(group.lattice==="hex") buildCellHex(); else buildCellSquare(); }
 
@@ -954,6 +1061,7 @@ function tileSquare(dst){
       ctx.globalCompositeOperation="source-over";
     }
   }
+  if(symAlpha>0) drawSymbols(ctx, bb);
   ctx.setTransform(1,0,0,1,0,0);
 }
 function tileHex(dst){
@@ -971,6 +1079,7 @@ function tileHex(dst){
       ctx.drawImage(cell, bx-C, by+j*w2y-C);
     }
   }
+  if(symAlpha>0) drawSymbols(ctx, bb);
   ctx.setTransform(1,0,0,1,0,0);
 }
 /* ---- coupled multi-layer feedback (v21) --------------------------
@@ -1246,7 +1355,7 @@ layers=[readLayer()];
 
 function serializeState(){
   layers[active]=readLayer();
-  return { v:2, N, sg:r4(seedGain), nm:r4(nameAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
+  return { v:2, N, sg:r4(seedGain), nm:r4(nameAlpha), sy:r4(symAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
 }
 function syncControls(){
   groupSel.value=groupKey();
@@ -1254,7 +1363,9 @@ function syncControls(){
   colorMode_el.value=colorMode;
   wordRange.value=wordAlpha; wordVal.textContent=wordAlpha.toFixed(2);
   gainRange.value=seedGain; gainVal.textContent=seedGain.toFixed(2);
-  nameRange.value=Math.round(nameAlpha*100); nameVal.textContent=Math.round(nameAlpha*100)+"\u00A0%"; nameStyleSel.value=nameStyle; nameStyleSel.disabled=(nameAlpha===0);
+  nameRange.value=Math.round(nameAlpha*100); nameVal.textContent=Math.round(nameAlpha*100)+"\u00A0%";
+  symRange.value=Math.round(symAlpha*100); symVal.textContent=Math.round(symAlpha*100)+"\u00A0%";
+  nameStyleSel.value=nameStyle; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0);
   hueRange.value=gHue; hueVal.textContent=fmtHue(gHue);
   satRange.value=gSat; satVal.textContent=gSat.toFixed(2)+"\u00D7";
   conRange.value=gCon; conVal.textContent=gCon.toFixed(2)+"\u00D7";
@@ -1282,6 +1393,7 @@ function applyState(s){
   if(Number.isFinite(s.N)) N=Math.max(2,Math.min(8,Math.round(s.N)));
   if(Number.isFinite(s.sg)) seedGain=clamp(s.sg,0,1);
   nameAlpha=Number.isFinite(s.nm)?clamp(s.nm,0,1):0;
+  symAlpha=Number.isFinite(s.sy)?clamp(s.sy,0,1):0;
   nameStyle=NAME_STYLES.includes(s.ns)?s.ns:"etched";
   /* colour defaults for layers that don't set them: neutral, or converted from the
      old global "vividness" (vv), which was contrast(1+vv) saturate(1+1.4 vv) per step */
@@ -1423,7 +1535,8 @@ animSpeedRange.addEventListener("input", e=>{ animSpeed=+e.target.value; animSpe
 rotRange.addEventListener("input", e=>{ gRotDeg=+e.target.value; rotVal.textContent=gRotDeg+"\u00B0"; });
 sclRange.addEventListener("input", e=>{ gScl=+e.target.value; sclVal.textContent=gScl.toFixed(2)+"\u00D7"; });
 gainRange.addEventListener("input", e=>{ seedGain=+e.target.value; gainVal.textContent=seedGain.toFixed(2); });
-nameRange.addEventListener("input", e=>{ nameAlpha=+e.target.value/100; nameVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0); });
+nameRange.addEventListener("input", e=>{ nameAlpha=+e.target.value/100; nameVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0); });
+symRange.addEventListener("input", e=>{ symAlpha=+e.target.value/100; symVal.textContent=e.target.value+"\u00A0%"; nameStyleSel.disabled=(nameAlpha===0&&symAlpha===0); });
 nameStyleSel.addEventListener("change", e=>{ nameStyle=e.target.value; });
 function fmtHue(h){ return (h>0?"+":"")+h+"\u00B0"; }
 hueRange.addEventListener("input", e=>{ gHue=+e.target.value; hueVal.textContent=fmtHue(gHue); });
