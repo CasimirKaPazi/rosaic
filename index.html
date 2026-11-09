@@ -19,6 +19,7 @@
     --serif:'Newsreader', Georgia, serif;
     --aside:330px;
     --cv:clamp(220px, min(calc(100vh - 250px), calc((100vw - var(--aside) - 80px) / 2)), 640px);
+    --ev:clamp(150px, min(calc((100vh - 290px) / 2), calc((100vw - var(--aside) - 110px) / 2)), 520px);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;}
@@ -52,6 +53,12 @@
   .ghead:hover{background:var(--panel-2);}
   .ghead .lt::before{content:"";flex:0 0 auto;width:0;height:0;border-left:4.5px solid transparent;border-right:4.5px solid transparent;border-top:6px solid var(--muted);transition:transform .15s;}
   .group.collapsed .ghead .lt::before{transform:rotate(-90deg);}
+  .lock{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;border:0;background:none;color:var(--faint);opacity:.55;cursor:pointer;flex:0 0 auto;vertical-align:middle;}
+  .lock svg{width:11px;height:13px;fill:none;stroke:currentColor;stroke-width:1.4;}
+  .lock .closed{display:none;} .lock.on .closed{display:inline;} .lock.on .open{display:none;}
+  .lock:hover{opacity:1;color:var(--accent);background:none;border:0;}
+  .lock.on{opacity:1;color:var(--accent);}
+  .lock.on svg rect{fill:currentColor;}
   .help{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--line-strong);border-radius:50%;color:var(--muted);font-size:9.5px;font-weight:600;letter-spacing:0;cursor:help;flex:0 0 auto;user-select:none;text-transform:none;}
   .help:hover,.help:focus{border-color:var(--accent);color:var(--accent);outline:none;}
   #tip{position:fixed;display:none;max-width:320px;background:#101215;border:1px solid var(--accent-dim);border-radius:5px;padding:11px 13px;color:var(--ink);font-family:var(--serif);font-size:14px;font-style:normal;line-height:1.5;letter-spacing:0;text-transform:none;z-index:200;box-shadow:0 10px 34px rgba(0,0,0,.6);pointer-events:none;}
@@ -112,6 +119,14 @@
   #overlay{position:absolute;inset:0;cursor:grab;}
   #overlay.dragging{cursor:grabbing;}
 
+  .evogrid{display:grid;grid-template-columns:repeat(2,var(--ev));gap:14px 22px;}
+  .evogrid[hidden],.stage[hidden]{display:none;}
+  .evo figcaption{max-width:var(--ev);white-space:nowrap;overflow:hidden;}
+  .evo figcaption em{overflow:hidden;text-overflow:ellipsis;}
+  .evo .frame canvas{width:var(--ev);height:var(--ev);}
+  .evo .frame{cursor:pointer;transition:box-shadow .12s;}
+  .evo .frame:hover,.evo .frame:focus-visible{box-shadow:0 0 0 2px var(--accent),0 22px 50px -22px rgba(0,0,0,.8);outline:none;}
+  .evo.orig .frame{box-shadow:0 0 0 1px var(--accent-dim),0 22px 50px -22px rgba(0,0,0,.8);}
   .transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;max-width:calc(2 * var(--cv) + 26px);width:100%;}
   .transport button{min-width:92px;}
   .readout{display:flex;flex-wrap:wrap;gap:4px 18px;margin-left:auto;font-size:12px;color:var(--muted);}
@@ -122,7 +137,7 @@
   .annot .note{font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--muted);}
 
   @media (max-width:900px){
-    :root{--cv:min(calc(100vw - 44px), 560px);}
+    :root{--cv:min(calc(100vw - 44px), 560px); --ev:calc((100vw - 66px) / 2);}
     body{overflow:auto;height:auto;}
     main{flex-direction:column;}
     aside{flex:none;border-right:0;overflow:visible;}
@@ -165,7 +180,7 @@
 
       <div class="group" data-key="mixing">
         <div class="label"><span class="lt">Stack mixing <span class="help" tabindex="0" data-tip="How the layers combine in <b>Stack</b> mode. Not used in Compose mode, where the layers form a pipeline instead.">?</span></span></div>
-        <div class="label"><span class="lt sublabel">blend <span class="help" tabindex="0" data-tip="How upper layers combine onto the base. <b>Average</b> mixes by opacity but low-passes the feedback (detail blurs to the shared skeleton); <b>Lighten / Darken / Difference</b> select a value per pixel and keep structure better; <b>Multiply</b> is physical moir&eacute;; <b>Screen</b> brightens.">?</span></span></div>
+        <div class="label"><span class="lt sublabel">blend <span class="help" tabindex="0" data-tip="How upper layers combine onto the base. <b>Average</b> mixes by opacity but low-passes the feedback (detail blurs to the shared skeleton); <b>Lighten / Darken / Difference</b> select a value per pixel and keep structure better; <b>Multiply</b> is physical moir&eacute;; <b>Screen</b> brightens.">?</span> <button class="lock" data-lock="bm" title="Lock blend during evolution"></button></span></div>
         <select id="blendMode">
           <option value="blend">Average &mdash; transparency</option>
           <option value="lighten">Lighten &mdash; per-pixel max</option>
@@ -174,19 +189,20 @@
           <option value="multiply">Multiply &mdash; moir&eacute;</option>
           <option value="screen">Screen</option>
         </select>
-        <div class="label"><span class="lt sublabel">coupling <span class="help" tabindex="0" data-tip="How much of the shared compound bleeds into every layer&rsquo;s own feedback each step. <b>0</b> = independent layers (sharp, optical moir&eacute;); <b>1</b> = all layers share one buffer (the averaged blur). Small values give interaction while keeping each layer&rsquo;s structure.">?</span></span><span class="x" id="kappaVal">0.00</span></div>
+        <div class="label"><span class="lt sublabel">coupling <span class="help" tabindex="0" data-tip="How much of the shared compound bleeds into every layer&rsquo;s own feedback each step. <b>0</b> = independent layers (sharp, optical moir&eacute;); <b>1</b> = all layers share one buffer (the averaged blur). Small values give interaction while keeping each layer&rsquo;s structure.">?</span> <button class="lock" data-lock="k" title="Lock coupling during evolution"></button></span><span class="x" id="kappaVal">0.00</span></div>
         <input type="range" id="kappaRange" min="0" max="1" step="0.01" value="0">
+        <div class="label"><span class="lt sublabel">layer opacities <button class="lock" data-lock="op" title="Lock the layer opacities during evolution"></button></span></div>
       </div>
 
       <div class="divider" id="activeDivider">Active layer</div>
 
       <div class="group" data-key="group">
-        <div class="label"><span class="lt">Symmetry group <span class="help" tabindex="0" data-tip="The wallpaper group whose symmetry the fold imposes &mdash; one of the 17. Its orbifold signature is shown beneath the Mosaic. Changing it re-shapes the fundamental domain and resets the frame to fit.">?</span></span></div>
+        <div class="label"><span class="lt">Symmetry group <span class="help" tabindex="0" data-tip="The wallpaper group whose symmetry the fold imposes &mdash; one of the 17. Its orbifold signature is shown beneath the Mosaic. Changing it re-shapes the fundamental domain and resets the frame to fit.">?</span> <button class="lock" data-lock="g" title="Lock the symmetry group during evolution"></button></span></div>
         <select id="groupSel"></select>
       </div>
 
       <div class="group" data-key="colour">
-        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present). <b>Class tint</b> and <b>tint falloff</b> apply to the last three modes.<br><br><b>Hue shift</b>, <b>saturation</b> and <b>contrast</b> are applied to this layer once per feedback step, so they compound while <b>Play</b> runs: a small hue shift makes the colours cycle, saturation or contrast above 1&times; counter the grey wash-out, below 1&times; let the image fade and soften. The panels always show one step&rsquo;s worth. Double-click a slider to return it to neutral.">?</span></span></div>
+        <div class="label"><span class="lt">Colour symmetry <span class="help" tabindex="0" data-tip="A colouring homomorphism G &rarr; colour group. <b>Hue cycle</b> rotates each fold&rsquo;s hue (a true k-colouring for p2, p3, p4, p6; a 2-colouring by colour sign for the others). <b>Reverse</b> inverts colour-reversing folds. <b>Group word</b> tints each domain by its group element &mdash; because the tint feeds back, a deep cell&rsquo;s colour is the composition of every element on its path (the address map). <b>Orientation</b> tints by Z_2 &mdash; the determinant sign (rotations vs mirrors / glides), a true homomorphism for all 17 groups; groups with no mirror or glide get no tint. <b>Rotation coset</b> tints each fold by its rotation angle, with mirror / glide folds sharing one extra class &mdash; the clean rotation quotient for the pure-rotation groups (p1, p2, p3, p4, p6), and a per-fold rotation label otherwise (reflections invert rotation, so Z_k isn&rsquo;t a homomorphic target once mirrors are present). <b>Class tint</b> and <b>tint falloff</b> apply to the last three modes.<br><br><b>Hue shift</b>, <b>saturation</b> and <b>contrast</b> are applied to this layer once per feedback step, so they compound while <b>Play</b> runs: a small hue shift makes the colours cycle, saturation or contrast above 1&times; counter the grey wash-out, below 1&times; let the image fade and soften. The panels always show one step&rsquo;s worth. Double-click a slider to return it to neutral.">?</span> <button class="lock" data-lock="cm" title="Lock the colour mode during evolution"></button></span></div>
         <select id="colorMode">
           <option value="none">None</option>
           <option value="hue">Hue cycle (k-colouring)</option>
@@ -195,26 +211,26 @@
           <option value="rotcoset">Rotation coset (&#8484;&#8342;)</option>
           <option value="orient">Orientation (&#8484;&#8322;)</option>
         </select>
-        <div class="label"><span class="lt sublabel">class tint</span><span class="x" id="wordVal">0.30</span></div>
+        <div class="label"><span class="lt sublabel">class tint <button class="lock" data-lock="wa" title="Lock class tint during evolution"></button></span><span class="x" id="wordVal">0.30</span></div>
         <input type="range" id="wordRange" min="0.05" max="0.8" step="0.05" value="0.3">
         <button id="tintFadeToggle" class="wide">Tint falloff: uniform</button>
-        <div class="label"><span class="lt sublabel">hue shift / step</span><span class="x" id="hueVal">0&deg;</span></div>
+        <div class="label"><span class="lt sublabel">hue shift / step <button class="lock" data-lock="hs" title="Lock hue shift / step during evolution"></button></span><span class="x" id="hueVal">0&deg;</span></div>
         <input type="range" id="hueRange" min="-30" max="30" step="0.5" value="0">
-        <div class="label"><span class="lt sublabel">saturation / step</span><span class="x" id="satVal">1.00&times;</span></div>
+        <div class="label"><span class="lt sublabel">saturation / step <button class="lock" data-lock="sat" title="Lock saturation / step during evolution"></button></span><span class="x" id="satVal">1.00&times;</span></div>
         <input type="range" id="satRange" min="0.8" max="1.8" step="0.01" value="1">
-        <div class="label"><span class="lt sublabel">contrast / step</span><span class="x" id="conVal">1.00&times;</span></div>
+        <div class="label"><span class="lt sublabel">contrast / step <button class="lock" data-lock="con" title="Lock contrast / step during evolution"></button></span><span class="x" id="conVal">1.00&times;</span></div>
         <input type="range" id="conRange" min="0.8" max="1.6" step="0.01" value="1">
         <div class="warn">&#9888; With Play running, colour symmetry can flash. Pause if uncomfortable.</div>
       </div>
 
       <div class="group" data-key="bounds">
-        <div class="label"><span class="lt">Boundaries <span class="help" tabindex="0" data-tip="The cell &amp; fold edges are drawn into the field each pass, so they nest into a self-similar lattice &mdash; and keep the feedback from washing out to a flat colour. The slider sets their opacity; the button switches them off entirely.">?</span></span><span class="x" id="boundVal">0.45</span></div>
+        <div class="label"><span class="lt">Boundaries <span class="help" tabindex="0" data-tip="The cell &amp; fold edges are drawn into the field each pass, so they nest into a self-similar lattice &mdash; and keep the feedback from washing out to a flat colour. The slider sets their opacity; the button switches them off entirely.">?</span> <button class="lock" data-lock="ba" title="Lock the boundary opacity during evolution"></button></span><span class="x" id="boundVal">0.45</span></div>
         <input type="range" id="boundRange" min="0" max="0.9" step="0.05" value="0.45">
         <button id="boundToggle" class="wide on">Boundaries: on</button>
       </div>
 
       <div class="group" data-key="frame">
-        <div class="label"><span class="lt">Feedback frame <span class="help" tabindex="0" data-tip="The affine <b>frame</b> on the Source panel, shaped like the fundamental domain, selects what gets folded. Drag the body to move, the stem knob to rotate, the diamond to scale uniformly, or either round handle to stretch / shear one edge. The framed region fills the fundamental domain &mdash; the whole image survives the fold, not a sliver.">?</span></span></div>
+        <div class="label"><span class="lt">Feedback frame <span class="help" tabindex="0" data-tip="The affine <b>frame</b> on the Source panel, shaped like the fundamental domain, selects what gets folded. Drag the body to move, the stem knob to rotate, the diamond to scale uniformly, or either round handle to stretch / shear one edge. The framed region fills the fundamental domain &mdash; the whole image survives the fold, not a sliver.">?</span> <button class="lock" data-lock="frame" title="Lock the frame (position, size, shape) during evolution"></button></span></div>
         <div class="btns">
           <button id="winToggle" class="on">Frame: shown</button>
           <button id="winReset">Reset frame</button>
@@ -236,9 +252,9 @@
 
       <div class="group" data-key="transform">
         <div class="label"><span class="lt">Layer transform <span class="help" tabindex="0" data-tip="Rotates &amp; scales this layer&rsquo;s whole tiling about the canvas centre. Static while idle &mdash; a clean re-orientation. Under <b>Play</b> it feeds back, so rotation spirals and scale &ne; 1 tunnels in or out. Identity (0&deg;, 1&times;) leaves the layer untouched. Double-click a slider to reset it.">?</span></span></div>
-        <div class="label"><span class="lt sublabel">rotation</span><span class="x" id="rotVal">0&deg;</span></div>
+        <div class="label"><span class="lt sublabel">rotation <button class="lock" data-lock="rot" title="Lock rotation during evolution"></button></span><span class="x" id="rotVal">0&deg;</span></div>
         <input type="range" id="rotRange" min="-180" max="180" step="1" value="0">
-        <div class="label"><span class="lt sublabel">scale</span><span class="x" id="sclVal">1.00&times;</span></div>
+        <div class="label"><span class="lt sublabel">scale <button class="lock" data-lock="scl" title="Lock scale during evolution"></button></span><span class="x" id="sclVal">1.00&times;</span></div>
         <input type="range" id="sclRange" min="0.5" max="2" step="0.01" value="1">
       </div>
 
@@ -258,6 +274,18 @@
       <div class="group" data-key="cells">
         <div class="label"><span class="lt">Cells across <span class="help" tabindex="0" data-tip="How many fundamental cells span the field &mdash; the tiling density. Shared across all layers; changing it restarts from the seed.">?</span></span><span class="x" id="cellsVal">3</span></div>
         <input type="range" id="cellsRange" min="2" max="8" step="1" value="3">
+      </div>
+
+      <div class="group" data-key="evolution">
+        <div class="label"><span class="lt">Evolution <span class="help" tabindex="0" data-tip="<b>Evolve</b> (under the images, or key <b>E</b>) shows the original top left and three variants of it. Each variant has slightly changed continuous settings &mdash; frame, layer transform, hue / saturation / contrast, tint, boundaries, opacity, coupling &mdash; and, with <b>discrete changes</b> on, in about one of three variants one bigger change: another group, colour mode or blend, named above the variant. The variants start from the original&rsquo;s current image and run alongside it under <b>Play</b>. Click one (or press <b>1 / 2 / 3</b>) to make it the new original; three new variants are drawn from it. Click the original (or press <b>0</b>) to draw three new variants without changing it. <b>Strength</b> scales the size of the changes. The sidebar controls always edit the original; <b>New variations</b> redraws the variants from it.<br><br>The <b>padlock</b> next to a setting keeps evolution from changing it (for every layer). <b>Lock all / Unlock all</b> set all of them at once.">?</span></span><span class="x" id="evoStrVal">1.00&times;</span></div>
+        <div class="label"><span class="lt sublabel">strength</span></div>
+        <input type="range" id="evoStrRange" min="0" max="3" step="0.05" value="1">
+        <div class="btns">
+          <button id="evoDiscBtn" class="on">Discrete: on</button>
+          <button id="evoNewBtn">New variations</button>
+          <button id="lockAll">Lock all</button>
+          <button id="unlockAll">Unlock all</button>
+        </div>
       </div>
 
       <div class="group" data-key="resolution">
@@ -312,11 +340,30 @@
           </div>
         </figure>
       </div>
+      <div class="evogrid" id="evoGrid" hidden>
+        <figure class="evo orig">
+          <figcaption>Original <em>&mdash; click for new variants</em></figcaption>
+          <div class="frame"><canvas id="evo0"></canvas></div>
+        </figure>
+        <figure class="evo var" data-k="0">
+          <figcaption>Variant 1 <em id="evoCh0"></em></figcaption>
+          <div class="frame"><canvas id="evo1"></canvas></div>
+        </figure>
+        <figure class="evo var" data-k="1">
+          <figcaption>Variant 2 <em id="evoCh1"></em></figcaption>
+          <div class="frame"><canvas id="evo2"></canvas></div>
+        </figure>
+        <figure class="evo var" data-k="2">
+          <figcaption>Variant 3 <em id="evoCh2"></em></figcaption>
+          <div class="frame"><canvas id="evo3"></canvas></div>
+        </figure>
+      </div>
       <div class="transport">
         <button id="playBtn" class="primary">Play</button>
         <button id="stepBtn">Step</button>
         <button id="resetBtn">Reset seed</button>
-        <span class="help" tabindex="0" data-tip="<b>Play</b> runs the feedback loop continuously; <b>Step</b> advances one iteration; <b>Reset seed</b> restarts every layer from the seed image (keeps your frames &amp; settings). Keys: <b>Space</b> play / pause, <b>S</b> step, <b>R</b> reset seed.">?</span>
+        <button id="evoBtn">Evolve</button>
+        <span class="help" tabindex="0" data-tip="<b>Play</b> runs the feedback loop continuously; <b>Step</b> advances one iteration; <b>Reset seed</b> restarts every layer from the seed image (keeps your frames &amp; settings). <b>Evolve</b> switches to the original plus three random variants &mdash; click a variant to make it the new original. Keys: <b>Space</b> play / pause, <b>S</b> step, <b>R</b> reset seed, <b>E</b> evolve, <b>1 / 2 / 3</b> pick a variant, <b>0</b> new variants.">?</span>
         <div class="readout">
           <span>iteration <b id="iterOut">0</b></span>
           <span>frame <b id="winScaleOut">100% &middot; 100%</b> <b id="winAngOut">90&deg;</b></span>
@@ -544,6 +591,7 @@ let iter=0, playing=false, seedImg=null, showWindow=true;
 let boundOn=true, boundA=0.45;
 let colorMode="none";       // "none" | "hue" | "invert" | "word" | "rotcoset" | "orient"
 let seedGain=0;             // seed re-injection per step (global)
+let evoOn=false;            // evolution mode: original + three variants (declared early: reset() checks it)
 let nameAlpha=0;            // opacity of the group name written into each fundamental domain (global, 0 = off)
 let blendMode="blend";      // how upper layers combine onto the base (app-level)
 let kappa=0;                // coupling: each layer feeds back (1-k)*itself + k*compound. 0 = independent (sharp), 1 = fully shared (old blur)
@@ -981,19 +1029,26 @@ function displaySource(){
   srcCtx.drawImage(activeInputBuf(),0,0);
 }
 /* one live pass */
-function renderView(){
+/* fold the current settings' buffers and write the result into dst */
+function renderInto(dst){
   if(combineMode==="compose"){
     composeLast=composePass();
-    vctx.setTransform(1,0,0,1,0,0); vctx.globalAlpha=1; vctx.globalCompositeOperation="source-over";
-    vctx.clearRect(0,0,FIELD,FIELD); if(composeLast>=0) vctx.drawImage(buf[composeLast],0,0);
+    const x=dst.getContext("2d");
+    x.setTransform(1,0,0,1,0,0); x.globalAlpha=1; x.globalCompositeOperation="source-over";
+    x.clearRect(0,0,FIELD,FIELD); if(composeLast>=0) x.drawImage(buf[composeLast],0,0);
   } else {
-    foldLayers(); composite(view);
+    foldLayers(); composite(dst);
   }
+}
+function renderView(){
+  renderInto(view);
   displaySource(); updateThumbs();
+  if(evoOn) evoCopyOriginal();
 }
 
-/* advance the feedback */
-function commitFeedback(){
+/* advance the feedback; compound = the canvas holding this world's last result */
+function commitFeedback(){ commitBuffers(view); iter++; iterOut.textContent=iter; }
+function commitBuffers(compound){
   if(combineMode==="compose"){
     const c=srcBuf[0].getContext("2d");
     c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation="source-over"; c.globalAlpha=1; c.clearRect(0,0,FIELD,FIELD);
@@ -1004,11 +1059,10 @@ function commitFeedback(){
       const c=srcBuf[i].getContext("2d");
       c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation="source-over"; c.globalAlpha=1; c.clearRect(0,0,FIELD,FIELD);
       c.drawImage(buf[i],0,0);                                        // self term  out[i]
-      if(kappa>0){ c.globalAlpha=kappa; c.drawImage(view,0,0); c.globalAlpha=1; }   // (1-k)*out[i] + k*C
+      if(kappa>0){ c.globalAlpha=kappa; c.drawImage(compound,0,0); c.globalAlpha=1; }   // (1-k)*out[i] + k*C
       if(seedGain>0){ c.globalAlpha=seedGain; c.drawImage(seed,0,0); c.globalAlpha=1; }
     }
   }
-  iter++; iterOut.textContent=iter;
 }
 
 /* ===== overlay (on Source panel) ===== */
@@ -1122,6 +1176,7 @@ function reset(reframe){
   for(const c of srcBuf){ const x=c.getContext("2d"); x.setTransform(1,0,0,1,0,0); x.globalAlpha=1; x.clearRect(0,0,FIELD,FIELD); x.drawImage(seed,0,0); }
   renderView();           // fold each layer's buffer -> compound (Mosaic) + active buffer (Source)
   refreshReadout();
+  if(evoOn) evoSpawn();   // variants restart from the same seed
   dirty=true;             // overlay too
 }
 function setPlaying(p){ playing=p; playBtn.textContent=p?"Pause":"Play"; playBtn.classList.toggle("primary",!p); }
@@ -1137,6 +1192,7 @@ function loop(){
   if(playing || animating || dirty){
     renderView();                 // fold every layer -> compound (Mosaic) + active buffer (Source)
     drawOverlay();
+    if(evoOn) evoRenderVariants(playing);
     dirty=false;
   }
   requestAnimationFrame(loop);
@@ -1374,7 +1430,8 @@ hueRange.addEventListener("input", e=>{ gHue=+e.target.value; hueVal.textContent
 satRange.addEventListener("input", e=>{ gSat=+e.target.value; satVal.textContent=gSat.toFixed(2)+"\u00D7"; });
 conRange.addEventListener("input", e=>{ gCon=+e.target.value; conVal.textContent=gCon.toFixed(2)+"\u00D7"; });
 playBtn.addEventListener("click", ()=>setPlaying(!playing));
-stepBtn.addEventListener("click", ()=>{ setPlaying(false); commitFeedback(); renderView(); });
+stepBtn.addEventListener("click", ()=>{ setPlaying(false); stepOnce(); });
+function stepOnce(){ commitFeedback(); renderView(); if(evoOn) evoRenderVariants(true); markDirty(); }
 resetBtn.addEventListener("click", ()=>{ setPlaying(false); reset(false); });
 winToggle.addEventListener("click", ()=>{ showWindow=!showWindow; winToggle.classList.toggle("on",showWindow); winToggle.textContent="Frame: "+(showWindow?"shown":"hidden"); });
 winReset.addEventListener("click", ()=>{ defaultFrame(); updateWinReadout(); });
@@ -1487,7 +1544,7 @@ document.querySelectorAll("aside .group").forEach(g=>{
   const key=g.dataset.key||head.textContent.trim();
   g._setCollapsed=c=>{ g.classList.toggle("collapsed",c); head.setAttribute("aria-expanded",String(!c)); collapsedSet[key]=c; };
   g._setCollapsed(!!collapsedSet[key]);
-  head.addEventListener("click",e=>{ if(e.target.closest(".help")) return; g._setCollapsed(!g.classList.contains("collapsed")); saveCollapsed(); });
+  head.addEventListener("click",e=>{ if(e.target.closest(".help,.lock")) return; g._setCollapsed(!g.classList.contains("collapsed")); saveCollapsed(); });
   head.addEventListener("keydown",e=>{ if(e.target!==head) return; if(e.key==="Enter"||e.key===" "){ e.preventDefault(); head.click(); } });
   groupEls.push(g);
 });
@@ -1507,8 +1564,149 @@ document.addEventListener("keydown",e=>{
   const t=e.target, tag=t&&t.tagName;
   if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||tag==="BUTTON"||(t&&t.isContentEditable)||(t&&t.getAttribute&&t.getAttribute("role")==="button")) return;
   if(e.key===" "){ e.preventDefault(); setPlaying(!playing); }
-  else if(e.key==="s"||e.key==="S"){ setPlaying(false); commitFeedback(); renderView(); }
+  else if(e.key==="s"||e.key==="S"){ setPlaying(false); stepOnce(); }
+  else if(e.key==="e"||e.key==="E"){ setEvo(!evoOn); }
+  else if(evoOn && (e.key==="1"||e.key==="2"||e.key==="3")){ evoAdopt(+e.key-1); }
+  else if(evoOn && e.key==="0"){ evoSpawn(); }
   else if(e.key==="r"||e.key==="R"){ setPlaying(false); reset(false); }
+});
+
+/* ===== evolution mode (v41) =====================================
+   The main view becomes a 2x2 grid: the original (top left, = the current
+   settings) and three variants. A variant is a copy of the original's settings
+   with small random changes to the continuous values (frame, transform, colour,
+   tint, opacity, coupling) and, optionally, one discrete change (group, colour
+   mode or blend). Every variant has its own feedback buffers, started from the
+   original's current image, and runs alongside it under Play. Clicking a variant
+   makes it the new original (settings and image) and draws three new variants.
+   Shared by all four: seed, seed re-inject, group names, cells across, resolution. */
+let evoW=[];                       // the three variant worlds
+let evoStrength=1, evoDiscrete=true;
+const evoGrid=document.getElementById("evoGrid"), stageEl=document.querySelector(".stage");
+const evoCanv=[0,1,2,3].map(k=>document.getElementById("evo"+k));
+const evoCh=[0,1,2].map(k=>document.getElementById("evoCh"+k));
+const evoBtn=document.getElementById("evoBtn");
+const evoStrRange=document.getElementById("evoStrRange"), evoStrVal=document.getElementById("evoStrVal");
+const evoDiscBtn=document.getElementById("evoDiscBtn"), evoNewBtn=document.getElementById("evoNewBtn");
+
+/* the settings that differ between worlds (shared ones stay global) */
+function captureGlobals(){
+  if(layers&&layers.length) layers[active]=readLayer();
+  return JSON.parse(JSON.stringify({ layers, active, kappa, blendMode, combineMode, tintFade }));
+}
+function loadGlobals(g){
+  layers=g.layers; active=g.active; kappa=g.kappa; blendMode=g.blendMode; combineMode=g.combineMode; tintFade=g.tintFade;
+  writeLayer(layers[active]); setLatticeFor(group);
+}
+function gauss(){ let u=0; while(!u) u=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random()); }
+/* change a copied state in place; returns short descriptions of discrete changes */
+function evoMutate(st){
+  const k=evoStrength, n=()=>k*gauss(), out=[], free=key=>!locks[key];
+  for(const L of st.layers){
+    if(free("frame")) for(const key of ["o","u","v"]) L[key]=L[key].map(x=>x+0.02*n());
+    if(free("rot")) L.rot=+(((L.rot+4*n())+540)%360-180).toFixed(2);
+    if(free("scl")) L.scl=clamp(L.scl*Math.exp(0.03*n()),0.5,2);
+    if(free("hs"))  L.hs=+clamp(L.hs+1.5*n(),-30,30).toFixed(2);
+    if(free("sat")) L.sat=clamp(L.sat+0.04*n(),0.8,1.8);
+    if(free("con")) L.con=clamp(L.con+0.03*n(),0.8,1.6);
+    if(free("wa"))  L.wa=clamp(L.wa+0.05*n(),0.05,0.8);
+    if(free("ba"))  L.ba=clamp(L.ba+0.05*n(),0,0.9);
+    if(free("op"))  L.op=clamp(L.op+0.05*n(),0,1);
+  }
+  if(st.layers.length>1 && free("k")) st.kappa=clamp(st.kappa+0.03*n(),0,1);
+  const stackMix=(st.combineMode!=="compose"&&st.layers.length>1);
+  const kinds=[["g",3],["cm",2],["bm",stackMix?1:0]].filter(([key,w])=>w>0&&free(key));   // weights 3:2:1 as before
+  if(evoDiscrete && k>0 && kinds.length && Math.random()<1/3){
+    const shown=st.layers.map((L,i)=>i).filter(i=>st.layers[i].on);
+    const li=shown[Math.floor(Math.random()*shown.length)], L=st.layers[li];
+    const tag=st.layers.length>1?" ("+(LETTERS[li]||li+1)+")":"";
+    const pick=a=>a[Math.floor(Math.random()*a.length)];
+    let r=Math.random()*kinds.reduce((a,[,w])=>a+w,0), kind=kinds[0][0];
+    for(const [key,w] of kinds){ if(r<w){ kind=key; break; } r-=w; }
+    if(kind==="g"){ const g=pick(Object.keys(GROUPS).filter(x=>x!==L.g)); out.push(L.g+" \u2192 "+g+tag); L.g=g; }
+    else if(kind==="cm"){ const c=pick(COLOR_MODES.filter(x=>x!==L.cm)); out.push("colour: "+c+tag); L.cm=c; }
+    else { const b=pick(Object.keys(BLENDOP).filter(x=>x!==st.blendMode)); out.push("blend: "+b); st.blendMode=b; }
+  }
+  return out;
+}
+/* evolution locks: one per setting, for all layers; kept in this browser */
+const LOCK_KEY="rosaic.locks";
+let locks={}; try{ locks=JSON.parse(localStorage.getItem(LOCK_KEY)||"{}")||{}; }catch(e){ locks={}; }
+const LOCK_SVG='<svg viewBox="0 0 12 14" aria-hidden="true"><path class="closed" d="M3.5 6.5V4.5a2.5 2.5 0 0 1 5 0v2"/><path class="open" d="M3.5 6.5V4.5a2.5 2.5 0 0 1 5 0v-.6"/><rect x="1.8" y="6.5" width="8.4" height="6.5" rx="1.2"/></svg>';
+const lockBtns=[...document.querySelectorAll(".lock")];
+function syncLocks(){
+  for(const b of lockBtns){ const on=!!locks[b.dataset.lock]; b.classList.toggle("on",on); b.setAttribute("aria-pressed",String(on)); }
+  try{ localStorage.setItem(LOCK_KEY, JSON.stringify(locks)); }catch(e){}
+}
+for(const b of lockBtns){
+  b.innerHTML=LOCK_SVG;
+  b.addEventListener("click",e=>{ e.stopPropagation(); locks[b.dataset.lock]=!locks[b.dataset.lock]; syncLocks(); });
+}
+document.getElementById("lockAll").addEventListener("click",()=>{ for(const b of lockBtns) locks[b.dataset.lock]=true; syncLocks(); });
+document.getElementById("unlockAll").addEventListener("click",()=>{ locks={}; syncLocks(); });
+syncLocks();
+function evoCanvas(){ const c=document.createElement("canvas"); c.width=c.height=FIELD; return c; }
+function evoFree(){ for(const w of evoW) for(const c of [...w.srcBuf,...w.buf]) c.width=c.height=0; evoW=[]; }
+/* draw three fresh variants from the current original */
+function evoSpawn(){
+  evoFree();
+  const base=captureGlobals();
+  for(let k=0;k<3;k++){
+    const st=JSON.parse(JSON.stringify(base)), ch=evoMutate(st), nL=st.layers.length;
+    const w={ state:st, srcBuf:[], buf:[], view:evoCanv[k+1], cl:-1 };
+    for(let i=0;i<nL;i++){ w.srcBuf.push(evoCanvas()); w.buf.push(evoCanvas()); copyBuf(srcBuf[i], w.srcBuf[i]); }
+    w.view.width=w.view.height=FIELD;
+    evoCh[k].textContent=ch.length?ch.join(", "):(evoStrength>0?"slight changes":"unchanged");
+    evoCh[k].title=evoCh[k].textContent;
+    evoW.push(w);
+  }
+  evoRenderVariants(false);
+  evoCopyOriginal();
+}
+/* render each variant (and, when stepping, advance its feedback first) */
+function evoRenderVariants(step){
+  if(!evoW.length) return;
+  const g0=captureGlobals(), sb=srcBuf.slice(), ob=buf.slice(), cl=composeLast;
+  for(const w of evoW){
+    for(let i=0;i<w.srcBuf.length;i++){ srcBuf[i]=w.srcBuf[i]; buf[i]=w.buf[i]; }
+    loadGlobals(w.state); composeLast=w.cl;
+    if(step) commitBuffers(w.view);                    // w.buf holds this variant's last render
+    renderInto(w.view); w.cl=composeLast;
+    for(let i=0;i<MAX_LAYERS;i++){ srcBuf[i]=sb[i]; buf[i]=ob[i]; }
+  }
+  composeLast=cl; loadGlobals(g0);
+}
+function evoCopyOriginal(){
+  const c=evoCanv[0]; if(c.width!==FIELD){ c.width=c.height=FIELD; }
+  const x=c.getContext("2d"); x.clearRect(0,0,FIELD,FIELD); x.drawImage(view,0,0);
+}
+/* make variant k the original */
+function evoAdopt(k){
+  const w=evoW[k]; if(!w) return;
+  loadGlobals(JSON.parse(JSON.stringify(w.state)));
+  for(let i=0;i<w.srcBuf.length;i++) copyBuf(w.srcBuf[i], srcBuf[i]);
+  reseatAnim(); syncControls(); renderLayerList(); renderView(); refreshReadout();
+  evoSpawn(); markDirty();
+}
+function setEvo(on){
+  evoOn=on; stageEl.hidden=on; evoGrid.hidden=!on;
+  evoBtn.classList.toggle("on",on); evoBtn.textContent=on?"Evolve: on":"Evolve";
+  if(on){ evoSpawn(); } else evoFree();
+  markDirty();
+}
+evoBtn.addEventListener("click",()=>setEvo(!evoOn));
+evoNewBtn.addEventListener("click",()=>{ if(evoOn) evoSpawn(); else setEvo(true); });
+evoStrRange.addEventListener("input",e=>{ evoStrength=+e.target.value; evoStrVal.textContent=evoStrength.toFixed(2)+"\u00D7"; });
+evoDiscBtn.addEventListener("click",()=>{ evoDiscrete=!evoDiscrete; evoDiscBtn.classList.toggle("on",evoDiscrete); evoDiscBtn.textContent="Discrete: "+(evoDiscrete?"on":"off"); });
+{ const fr=document.querySelector(".evo.orig .frame");   // the original: draw new variants
+  fr.tabIndex=0; fr.setAttribute("role","button"); fr.setAttribute("aria-label","new variants");
+  fr.addEventListener("click",()=>evoSpawn());
+  fr.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); evoSpawn(); } }); }
+document.querySelectorAll(".evo.var").forEach(f=>{
+  const k=+f.dataset.k, fr=f.querySelector(".frame");
+  fr.tabIndex=0; fr.setAttribute("role","button"); fr.setAttribute("aria-label","adopt variant "+(k+1));
+  fr.addEventListener("click",()=>evoAdopt(k));
+  fr.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); evoAdopt(k); } });
 });
 
 syncModeUI();
