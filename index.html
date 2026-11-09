@@ -135,6 +135,24 @@
   .annot .orb{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--accent);}
   .annot .orb .glyph{font-size:15px;color:var(--ink);margin-left:8px;}
   .annot .note{font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--muted);}
+  .explain{margin-top:8px;text-align:left;border-top:1px solid var(--line);padding-top:8px;}
+  .explain summary{cursor:pointer;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--title);text-align:center;list-style:none;}
+  .explain summary::-webkit-details-marker{display:none;}
+  .explain summary::before{content:"\25B8  ";color:var(--muted);} .explain[open] summary::before{content:"\25BE  ";}
+  .explain summary:hover{color:var(--accent);}
+  .excols{display:grid;grid-template-columns:1fr 1fr;gap:10px 34px;margin-top:12px;}
+  .exh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .exnote{font-family:var(--serif);font-size:13.5px;line-height:1.45;color:var(--faint);margin-top:8px;}
+  table.sig{border-collapse:collapse;width:100%;font-size:13.5px;}
+  table.sig td{padding:3px 6px;vertical-align:baseline;border-bottom:1px solid var(--line);}
+  table.sig td.s{font-family:var(--mono);font-size:16px;color:var(--accent);width:1.6em;text-align:center;}
+  table.sig td.t{font-family:var(--serif);color:var(--ink);line-height:1.35;}
+  table.sig td.c{font-family:var(--mono);font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap;}
+  table.sig tr.sum td{border-bottom:0;color:var(--ink);} table.sig tr.sum td.c{color:var(--accent);}
+  ol.path{margin:0;padding-left:20px;font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--muted);}
+  ol.path li{margin-bottom:4px;} ol.path b{color:var(--ink);font-weight:500;}
+  ol.path .alt{color:var(--faint);font-size:12.5px;font-family:var(--mono);}
+  ol.path li.leaf{list-style:none;margin-left:-20px;font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.06em;}
 
   @media (max-width:900px){
     :root{--cv:min(calc(100vw - 44px), 560px); --ev:calc((100vw - 66px) / 2);}
@@ -144,6 +162,7 @@
     section{overflow:visible;order:-1;border-bottom:1px solid var(--line);}   /* images first on small screens */
     .stage{flex-direction:column;align-items:center;}
     .readout{margin-left:0;justify-content:center;}
+    .excols{grid-template-columns:1fr;}
     header .sub{display:none;}
   }
 </style>
@@ -376,7 +395,21 @@
       </div>
       <div class="annot">
         <div class="orb">orbifold <span class="glyph" id="orbOut">o</span></div>
-        <div class="note" id="noteOut"></div>
+        <details class="explain" id="explain" open>
+          <summary>How to read this group</summary>
+          <div class="excols">
+            <div class="excol">
+              <div class="exh">Orbifold signature, piece by piece</div>
+              <table class="sig" id="sigOut"></table>
+              <div class="exnote">Each piece has a cost; for a pattern that repeats in two directions the costs always add up to exactly 2 &mdash; which is why there are just 17 wallpaper groups.</div>
+            </div>
+            <div class="excol">
+              <div class="exh">How to recognise it</div>
+              <ol class="path" id="pathOut"></ol>
+              <div class="exnote" id="noteOut"></div>
+            </div>
+          </div>
+        </details>
       </div>
     </section>
   </main>
@@ -532,12 +565,16 @@ const GROUPS = {
   p3 : { orbifold:"333", lattice:"hex", wedge:R=>[[0,0],HV(0,R),HV(1,R),HV(2,R)], ck:3,
          ops:[{lin:rotL(0),cs:1,ci:0},{lin:rotL(120),cs:1,ci:1},{lin:rotL(240),cs:1,ci:2}],
          note:"Three-fold rotation on the triangular lattice \u2014 the gentlest hexagonal group, no mirror. (Hue cycle gives it a true 3-colouring.)" },
-  p3m1:{ orbifold:"*333", lattice:"hex", wedge:R=>[[0,0],HM(0,R),HV(1,R),HM(1,R)],
-         ops:[{lin:rotL(0),cs:1},{lin:rotL(120),cs:1},{lin:rotL(240),cs:1},{lin:mirL(30),cs:-1},{lin:mirL(90),cs:-1},{lin:mirL(150),cs:-1}],
-         note:"Three-fold rotation with mirrors through every rotation centre (mirror lines at 30\u00B0/90\u00B0/150\u00B0)." },
-  p31m:{ orbifold:"3*3", lattice:"hex", wedge:R=>[[0,0],HV(0,R),HV(1,R)],
+  /* v46: the geometry of these two was swapped before (names did not match the
+     pattern). Checked from the computed symmetry elements: with mirrors at 0/60/120
+     they pass through the hexagon corners, so every 3-fold centre lies on a mirror
+     (*333 = p3m1); with mirrors at 30/90/150 the corner centres lie off them (3*3). */
+  p3m1:{ orbifold:"*333", lattice:"hex", wedge:R=>[[0,0],HV(0,R),HV(1,R)],
          ops:[{lin:rotL(0),cs:1},{lin:rotL(120),cs:1},{lin:rotL(240),cs:1},{lin:mirL(0),cs:-1},{lin:mirL(60),cs:-1},{lin:mirL(120),cs:-1}],
-         note:"Three-fold rotation with mirrors (at 0\u00B0/60\u00B0/120\u00B0) that catch only some of the rotation centres \u2014 the others sit off every mirror." },
+         note:"Three-fold rotation with mirrors (at 0\u00B0/60\u00B0/120\u00B0) through every rotation centre; the mirrors cut the plane into equilateral triangles." },
+  p31m:{ orbifold:"3*3", lattice:"hex", wedge:R=>[[0,0],HM(0,R),HV(1,R),HM(1,R)],
+         ops:[{lin:rotL(0),cs:1},{lin:rotL(120),cs:1},{lin:rotL(240),cs:1},{lin:mirL(30),cs:-1},{lin:mirL(90),cs:-1},{lin:mirL(150),cs:-1}],
+         note:"Three-fold rotation with mirrors (at 30\u00B0/90\u00B0/150\u00B0) through only some of the rotation centres \u2014 the others sit off every mirror." },
   p6 : { orbifold:"632", lattice:"hex", wedge:R=>[[0,0],HV(0,R),HV(1,R)], ck:6,
          ops:[{lin:rotL(0),cs:1,ci:0},{lin:rotL(60),cs:-1,ci:1},{lin:rotL(120),cs:1,ci:2},{lin:rotL(180),cs:-1,ci:3},{lin:rotL(240),cs:1,ci:4},{lin:rotL(300),cs:-1,ci:5}],
          note:"Six-fold rotation, no mirror; the six wedges cycle through 0\u00B0\u202660\u00B0\u00B7\u00B7\u00B7300\u00B0." },
@@ -571,6 +608,7 @@ const sclRange=document.getElementById("sclRange"), sclVal=document.getElementBy
 const blendSel=document.getElementById("blendMode");
 const kappaRange=document.getElementById("kappaRange"), kappaVal=document.getElementById("kappaVal");
 const combineSel=document.getElementById("combineMode");
+const sigOut=document.getElementById("sigOut"), pathOut=document.getElementById("pathOut");
 const iterOut=document.getElementById("iterOut"), winScaleOut=document.getElementById("winScaleOut"), winAngOut=document.getElementById("winAngOut"), copiesOut=document.getElementById("copiesOut");
 const resOut=document.getElementById("resOut"), resSel=document.getElementById("resSel");
 const nameRange=document.getElementById("nameRange"), nameVal=document.getElementById("nameVal"), nameStyleSel=document.getElementById("nameStyle");
@@ -1275,7 +1313,48 @@ function updateWinReadout(){
   dot=Math.max(-1,Math.min(1,dot));
   winAngOut.textContent=Math.round(Math.acos(dot)*180/Math.PI)+"\u00B0";
 }
-function refreshReadout(){ copiesOut.textContent=group.ops.length; orbOut.textContent=group.orbifold; noteOut.textContent=group.note; updateWinReadout(); }
+function refreshReadout(){ copiesOut.textContent=group.ops.length; orbOut.textContent=group.orbifold; noteOut.textContent=group.note; updateWinReadout(); renderExplain(); }
+
+/* ---- explanation panel (v46) --------------------------------------
+   1. the orbifold signature split into its pieces, with Conway's costs
+   2. the usual recognition questions, with the path to the current group   */
+function sigTerms(sig){
+  const out=[]; let afterStar=false, stars=0, crosses=0;
+  for(const ch of sig){
+    if(ch==="o") out.push(["o","translations only &mdash; no rotation, mirror or glide",[2,1]]);
+    else if(ch==="*"){ stars++; afterStar=true;
+      out.push(["*", stars===1?"mirror lines":"a second family of mirror lines, not equivalent to the first",[1,1]]); }
+    else if(ch==="\u00D7"){ crosses++;
+      out.push(["\u00D7", crosses===1?"a glide reflection whose axis is not a mirror":"a second, inequivalent such glide",[1,1]]); }
+    else { const k=+ch;
+      if(afterStar) out.push([ch, k+"-fold centre on mirrors, where they meet at "+(180/k)+"&deg;",[k-1,2*k]]);
+      else out.push([ch, k+"-fold rotation centre lying on no mirror",[k-1,k]]); }
+  }
+  return out;
+}
+function fracStr(n,d){ const g=(a,b)=>b?g(b,a%b):a, q=g(n,d); n/=q; d/=q; return d===1?String(n):n+"/"+d; }
+const ID_TREE={q:"Smallest rotation (highest order)?", b:[
+  ["none", {q:"Mirrors?", b:[["yes",{q:"Glide axes that are not mirrors?",b:[["yes","cm"],["no","pm"]]}],["no",{q:"Glide reflections?",b:[["yes","pg"],["no","p1"]]}]]}],
+  ["180&deg; (2-fold)", {q:"Mirrors?", b:[["yes",{q:"Mirrors in two directions?",b:[["yes",{q:"All rotation centres on mirrors?",b:[["yes","pmm"],["no","cmm"]]}],["no","pmg"]]}],["no",{q:"Glide reflections?",b:[["yes","pgg"],["no","p2"]]}]]}],
+  ["120&deg; (3-fold)", {q:"Mirrors?", b:[["yes",{q:"All rotation centres on mirrors?",b:[["yes","p3m1"],["no","p31m"]]}],["no","p3"]]}],
+  ["90&deg; (4-fold)", {q:"Mirrors?", b:[["yes",{q:"4-fold centres on mirrors?",b:[["yes","p4m"],["no","p4g"]]}],["no","p4"]]}],
+  ["60&deg; (6-fold)", {q:"Mirrors?", b:[["yes","p6m"],["no","p6"]]}]]};
+function idPath(node,key){            // list of [question, chosen answer, other answers] down to the leaf
+  if(typeof node==="string") return node===key?[]:null;
+  for(const [ans,sub] of node.b){ const p=idPath(sub,key); if(p) return [[node.q,ans,node.b.filter(x=>x[0]!==ans)],...p]; }
+  return null;
+}
+function renderExplain(){
+  const key=groupKey(), terms=sigTerms(group.orbifold);
+  let num=0, den=1;
+  const rows=terms.map(([s,t,[n,d]])=>{ num=num*d+n*den; den=den*d; return "<tr><td class=s>"+s+"</td><td class=t>"+t+"</td><td class=c>"+fracStr(n,d)+"</td></tr>"; });
+  rows.push("<tr class=sum><td></td><td class=t>total</td><td class=c>"+fracStr(num,den)+"</td></tr>");
+  sigOut.innerHTML=rows.join("");
+  const path=idPath(ID_TREE,key)||[];
+  pathOut.innerHTML=path.map(([q,a,alts])=>{ const direct=alts.filter(([,sub])=>typeof sub==="string");   // only alternatives that name a group
+      return "<li>"+q+" <b>"+a+"</b>"+(direct.length?" <span class=alt>("+direct.map(([x,sub])=>x+" &rarr; "+sub).join("; ")+")</span>":"")+"</li>"; }).join("")
+    +"<li class=leaf>&rarr; "+key+" &middot; "+group.orbifold+"</li>";
+}
 
 function reset(reframe){
   resize();
@@ -1355,7 +1434,7 @@ layers=[readLayer()];
 
 function serializeState(){
   layers[active]=readLayer();
-  return { v:2, N, sg:r4(seedGain), nm:r4(nameAlpha), sy:r4(symAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
+  return { v:3, N, sg:r4(seedGain), nm:r4(nameAlpha), sy:r4(symAlpha), ns:nameStyle, bm:blendMode, k:r4(kappa), cmb:combineMode, res:BASE, tf:tintFade, active, layers:layers.map(serLayer) };
 }
 function syncControls(){
   groupSel.value=groupKey();
@@ -1404,6 +1483,11 @@ function applyState(s){
   if(s.cmb==="stack"||s.cmb==="compose") combineMode=s.cmb;
   if(Number.isFinite(s.res)) BASE=Math.max(256,Math.min(2048,Math.round(s.res)));
   if(typeof s.tf==="boolean") tintFade=s.tf;
+  /* states saved before v46 (v < 3) used the swapped p3m1 / p31m names: translate
+     them so an old state still shows the same picture */
+  const legacyHex=!(s.v>=3), fixG=g=>legacyHex&&(g==="p3m1"||g==="p31m") ? (g==="p3m1"?"p31m":"p3m1") : g;
+  if(Array.isArray(s.layers)) s=Object.assign({},s,{layers:s.layers.map(L=>L&&typeof L==="object"?Object.assign({},L,{g:fixG(L.g)}):L)});
+  else if(s.g) s=Object.assign({},s,{g:fixG(s.g)});
   if(Array.isArray(s.layers)){                       // v2 layered format
     let ls = s.layers.slice(0,MAX_LAYERS).filter(L=>L&&typeof L==="object").map(L=>Object.assign({}, L, { on:L.on!==false, op:Number.isFinite(L.op)?clamp(L.op,0,1):1 }));
     if(!ls.length) ls=[readLayer()];
@@ -1831,6 +1915,9 @@ document.querySelectorAll(".evo.var").forEach(f=>{
   fr.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); evoAdopt(k); } });
 });
 
+{ const ex=document.getElementById("explain");
+  try{ if(localStorage.getItem("rosaic.explain")==="closed") ex.open=false; }catch(e){}
+  ex.addEventListener("toggle",()=>{ try{ localStorage.setItem("rosaic.explain", ex.open?"open":"closed"); }catch(e){} }); }
 syncModeUI();
 renderLayerList();
 requestAnimationFrame(loop);
